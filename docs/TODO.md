@@ -1,20 +1,30 @@
 # TODO
 
 - [x] Use Typescript
-- [ ] Fractal Demo
-  - [ ] Port a Shadertoy fractal (e.g. Menger sponge / fractal tunnel) to a Three.js `ShaderMaterial` with basic ray marching
-  - [ ] Render a demo fractal with some guessed constant
-- [ ] Fractal from music MVP (See [fractal.md](./fractal.md))
-  - [ ] Extract frequency bands from `BeatDetector`'s analyser → compute `u_bass`, `u_treble` each frame
-  - [ ] Wire uniforms into the fractal shader (scale folding by bass, color by treble, burst on transient)
-  - [ ] Compose fractal as background — match raymarching FOV to the Three.js camera
+- [x] Fractal Demo
+  - [x] Port a Shadertoy fractal (e.g. Menger sponge / fractal tunnel) to a Three.js `ShaderMaterial` with basic ray marching
+  - [x] Render a demo fractal with some guessed constant
+- [x] Fractal from music MVP (See [fractal.md](./fractal.md))
+  - [x] Extract frequency bands from `BeatDetector`'s analyser → compute `u_bass`, `u_treble` each frame
+  - [x] Wire uniforms into the fractal shader (scale folding by bass, color by treble, burst on transient)
+  - [x] Compose fractal as background — match raymarching FOV to the Three.js camera
+- [ ] Fractal-Integrated Gameplay
+  - [ ] Unify scene: camera flies forward through monochrome fractal tunnel (replace rasterized note highway)
+  - [ ] Notes as SDF spheres lodged in fractal voids — smooth-union blend so geometry cradles each note
+  - [ ] Upload note positions as uniforms (cap ~8 visible), colored per lane/sector
+  - [ ] Radial lane sectors (quadrants via `atan2`) — map to input keys
+  - [ ] Hit zone: ring/iris at fixed z-depth from camera, pulse on beat
+  - [ ] Timing judgement from z-proximity (reuse HitJudge logic)
+  - [ ] Notes emit colored light onto surrounding monochrome fractal walls
+  - [ ] On-hit: fractal cracks open locally + ball bursts along fractal edges
+  - [ ] On-miss: ball dims and fractal void absorbs it (fills back in)
 - [ ] Fix overshaking
 - [ ] Fix camera shifting
 - [ ] (Optional) Better Fractal
   - [ ] Add transient detection (dual-envelope method) → `u_transient` uniform
-  - [ ] Add SDF lighting (central-difference normals, diffuse + specular)
   - [ ] Add reflections (secondary ray march)
-  - [ ] Enable HDR render target (`HalfFloatType`) and ensure tone mapping + existing bloom apply
+  - [x] Add SDF lighting (central-difference normals, diffuse + specular)
+  - [x] Enable HDR render target (`HalfFloatType`) and ensure tone mapping + existing bloom apply
   - [ ] Implement cone marching for performance if frame rate is too low
 - [ ] (Optional) Better beatmap generation
   - [ ] Support multiple difficulty

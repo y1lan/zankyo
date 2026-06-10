@@ -2,9 +2,7 @@
 
 ## TODO
 
-Update TODO file when a task is finished or a new task shall be added.
-
-See [docs/TODO.md](./docs/TODO.md).
+[docs/TODO.md](./docs/TODO.md) is used to track TODO items. Update TODO file when a task is finished or a new task shall be added.
 
 ## Notes
 

@@ -4,6 +4,7 @@ import { NoteSpawner } from './engine/NoteSpawner.js';
 import { HitJudge } from './engine/HitJudge.js';
 import { SceneSetup } from './rendering/SceneSetup.js';
 import { FractalTunnel } from './rendering/FractalTunnel.js';
+import { FractalBackground } from './rendering/FractalBackground.js';
 import { LaneMandalas } from './rendering/LaneMandalas.js';
 import { HitEffects } from './rendering/HitEffects.js';
 import { Controls } from './ui/Controls.js';
@@ -17,6 +18,7 @@ const { scene, camera } = sceneSetup;
 new LaneMandalas(scene);
 const hitFx = new HitEffects(scene);
 let tunnel: FractalTunnel | null = null;
+let fractalBg: FractalBackground | null = null;
 
 // ── UI ─────────────────────────────────────────────────────────
 const controls = new Controls(bus);
@@ -40,6 +42,7 @@ bus.on('ui:load', async ({ file }) => {
     judge.reset();
     spawner.clear();
     if (!tunnel) tunnel = new FractalTunnel(scene);
+    if (!fractalBg) fractalBg = new FractalBackground(scene);
     controls.setPlaying(true);
     hud.showSong(file.name.replace(/\.[^/.]+$/, ''));
     controls.clearFile();
@@ -63,6 +66,7 @@ audio.onBeat = (energy, laneIndex) => {
   spawner.spawn(laneIndex);
   hud.showBeat(energy);
   if (tunnel) tunnel.onBeat();
+  if (fractalBg) fractalBg.onBeat();
 };
 
 // Audio → frequency data → background + FOV + fractal tunnel
@@ -70,6 +74,7 @@ audio.onFrequencyData = ({ low, mid, high }) => {
   const ln = low / 255, mn = mid / 255, hn = high / 255;
   sceneSetup.setBg(0.03 + ln * 0.12, 0.02 + mn * 0.04, 0.04 + hn * 0.25);
   if (tunnel) tunnel.update({ lowNorm: ln, midNorm: mn, highNorm: hn });
+  if (fractalBg) fractalBg.update(ln, hn, camera);
 };
 
 // Audio → ended

@@ -29,7 +29,11 @@ export class SceneSetup {
     this.renderer.toneMappingExposure = 1;
     document.body.appendChild(this.renderer.domElement);
 
-    this.composer = new EffectComposer(this.renderer);
+    this.composer = new EffectComposer(this.renderer,
+      new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
+        type: THREE.HalfFloatType,
+      })
+    );
     this.composer.addPass(new RenderPass(this.scene, this.camera));
 
     this.bloomPass = new UnrealBloomPass(
