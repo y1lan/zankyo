@@ -4,47 +4,34 @@ export class UI {
     this.container.id = 'ui-overlay';
     document.body.appendChild(this.container);
 
+    // Song name (top left)
+    this.songNameEl = document.createElement('div');
+    this.songNameEl.id = 'song-name';
+    this.container.appendChild(this.songNameEl);
+
+    // BEAT! indicator (center)
     this.beatIndicator = document.createElement('div');
     this.beatIndicator.id = 'beat-indicator';
     this.beatIndicator.textContent = 'BEAT!';
     this.container.appendChild(this.beatIndicator);
 
+    // Score (top right)
     this.scoreEl = document.createElement('div');
     this.scoreEl.id = 'score';
     this.scoreEl.textContent = '0000000';
     this.container.appendChild(this.scoreEl);
 
+    // Combo (center-right)
     this.comboEl = document.createElement('div');
     this.comboEl.id = 'combo';
     this.container.appendChild(this.comboEl);
 
+    // Judgement popup (center)
     this.judgementEl = document.createElement('div');
     this.judgementEl.id = 'judgement';
     this.container.appendChild(this.judgementEl);
 
-    this.fileInput = document.createElement('input');
-    this.fileInput.type = 'file';
-    this.fileInput.accept = 'audio/*';
-    this.fileInput.id = 'file-input';
-    this.container.appendChild(this.fileInput);
-
-    this.fileLabel = document.createElement('label');
-    this.fileLabel.htmlFor = 'file-input';
-    this.fileLabel.textContent = 'LOAD TRACK';
-    this.fileLabel.id = 'file-label';
-    this.container.appendChild(this.fileLabel);
-
-    this.loadingEl = document.createElement('div');
-    this.loadingEl.id = 'loading';
-    this.loadingEl.textContent = 'LOADING...';
-    this.loadingEl.style.display = 'none';
-    this.container.appendChild(this.loadingEl);
-
-    this.instructionsEl = document.createElement('div');
-    this.instructionsEl.id = 'instructions';
-    this.instructionsEl.textContent = 'D / F / J / K — one key per lane';
-    this.container.appendChild(this.instructionsEl);
-
+    // Lane key indicators (bottom area, above buttons)
     this.laneKeys = document.createElement('div');
     this.laneKeys.id = 'lane-keys';
     this.laneKeys.innerHTML = `
@@ -54,6 +41,44 @@ export class UI {
       <span class="lane-key" style="color:#ffaa44">K</span>
     `;
     this.container.appendChild(this.laneKeys);
+
+    // Control buttons bar
+    this.controlsBar = document.createElement('div');
+    this.controlsBar.id = 'controls-bar';
+
+    this.stopBtn = document.createElement('button');
+    this.stopBtn.id = 'stop-btn';
+    this.stopBtn.textContent = 'STOP';
+    this.stopBtn.style.display = 'none';
+    this.controlsBar.appendChild(this.stopBtn);
+
+    this.fileInput = document.createElement('input');
+    this.fileInput.type = 'file';
+    this.fileInput.accept = 'audio/*';
+    this.fileInput.id = 'file-input';
+    this.controlsBar.appendChild(this.fileInput);
+
+    this.fileLabel = document.createElement('label');
+    this.fileLabel.htmlFor = 'file-input';
+    this.fileLabel.textContent = 'LOAD TRACK';
+    this.fileLabel.id = 'file-label';
+    this.controlsBar.appendChild(this.fileLabel);
+
+    this.newTrackLabel = document.createElement('label');
+    this.newTrackLabel.htmlFor = 'file-input';
+    this.newTrackLabel.textContent = 'NEW TRACK';
+    this.newTrackLabel.id = 'new-track-label';
+    this.newTrackLabel.style.display = 'none';
+    this.controlsBar.appendChild(this.newTrackLabel);
+
+    this.container.appendChild(this.controlsBar);
+
+    // Loading overlay
+    this.loadingEl = document.createElement('div');
+    this.loadingEl.id = 'loading';
+    this.loadingEl.textContent = 'LOADING...';
+    this.loadingEl.style.display = 'none';
+    this.container.appendChild(this.loadingEl);
 
     this.addStyles();
 
@@ -77,6 +102,20 @@ export class UI {
         font-family: 'Noto Sans JP', sans-serif;
       }
 
+      #song-name {
+        position: absolute;
+        top: 30px;
+        left: 40px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: rgba(255,255,255,0.35);
+        letter-spacing: 0.1em;
+        max-width: 50vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
       #beat-indicator {
         position: absolute;
         top: 50%;
@@ -92,9 +131,7 @@ export class UI {
         white-space: nowrap;
       }
 
-      #beat-indicator.active {
-        opacity: 1;
-      }
+      #beat-indicator.active { opacity: 1; }
 
       #score {
         position: absolute;
@@ -122,9 +159,7 @@ export class UI {
         transform: skewX(-10deg) translateY(-50%);
       }
 
-      #combo.active {
-        opacity: 1;
-      }
+      #combo.active { opacity: 1; }
 
       #judgement {
         position: absolute;
@@ -147,18 +182,42 @@ export class UI {
         100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
       }
 
-      #file-input { display: none; }
+      #lane-keys {
+        position: absolute;
+        bottom: 120px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 60px;
+      }
 
-      #file-label {
+      .lane-key {
+        font-size: 1.5rem;
+        font-weight: 900;
+        text-shadow: 0 0 12px currentColor;
+        opacity: 0.45;
+        pointer-events: none;
+      }
+
+      #controls-bar {
         position: absolute;
         bottom: 40px;
         left: 50%;
         transform: translateX(-50%);
-        padding: 16px 48px;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+
+      #file-input { display: none; }
+
+      #file-label, #new-track-label, #stop-btn {
+        padding: 12px 36px;
         background: rgba(255,255,255,0.05);
         border: 2px solid rgba(255,255,255,0.3);
         color: #fff;
-        font-size: 1.2rem;
+        font-family: 'Noto Sans JP', sans-serif;
+        font-size: 0.95rem;
         font-weight: 700;
         letter-spacing: 0.2em;
         cursor: pointer;
@@ -167,10 +226,24 @@ export class UI {
         backdrop-filter: blur(10px);
       }
 
-      #file-label:hover {
+      #new-track-label {
+        border-color: rgba(100,200,255,0.4);
+      }
+
+      #stop-btn {
+        border-color: rgba(255,100,100,0.5);
+        background: rgba(255,50,50,0.1);
+      }
+
+      #file-label:hover, #new-track-label:hover {
         background: rgba(255,255,255,0.15);
         border-color: rgba(255,255,255,0.6);
         text-shadow: 0 0 20px rgba(255,255,255,0.5);
+      }
+
+      #stop-btn:hover {
+        background: rgba(255,50,50,0.25);
+        border-color: rgba(255,100,100,0.8);
       }
 
       #loading {
@@ -189,35 +262,12 @@ export class UI {
         0%, 100% { opacity: 0.3; }
         50% { opacity: 1; }
       }
-
-      #instructions {
-        position: absolute;
-        bottom: 120px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 0.85rem;
-        color: rgba(255,255,255,0.4);
-        letter-spacing: 0.15em;
-      }
-
-      #lane-keys {
-        position: absolute;
-        bottom: 70px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 40px;
-      }
-
-      .lane-key {
-        font-size: 1.6rem;
-        font-weight: 900;
-        text-shadow: 0 0 16px currentColor;
-        opacity: 0.6;
-        pointer-events: auto;
-      }
     `;
     document.head.appendChild(style);
+  }
+
+  showSongName(name) {
+    this.songNameEl.textContent = name;
   }
 
   showBeat(intensity) {
@@ -260,14 +310,28 @@ export class UI {
     this.judgementEl.classList.add('show');
   }
 
+  setPlaying(playing, songName) {
+    if (playing) {
+      this.fileLabel.style.display = 'none';
+      this.newTrackLabel.style.display = 'inline-block';
+      this.stopBtn.style.display = 'inline-block';
+      if (songName) this.showSongName(songName);
+    } else {
+      this.fileLabel.style.display = 'inline-block';
+      this.newTrackLabel.style.display = 'none';
+      this.stopBtn.style.display = 'none';
+      this.songNameEl.textContent = '';
+    }
+  }
+
   showLoading() {
     this.loadingEl.style.display = 'block';
     this.fileLabel.style.display = 'none';
+    this.newTrackLabel.style.display = 'none';
+    this.stopBtn.style.display = 'none';
   }
 
   hideLoading() {
     this.loadingEl.style.display = 'none';
-    this.fileLabel.textContent = 'PLAY AGAIN';
-    this.fileLabel.style.display = 'block';
   }
 }

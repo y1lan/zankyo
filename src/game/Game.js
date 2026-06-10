@@ -52,10 +52,10 @@ export class Game {
   }
 
   setupBeatDetection() {
-    this.beatDetector.onBeat = (intensity) => {
+    this.beatDetector.onBeat = (energy, laneIndex) => {
       if (!this.beatDetector.isPlaying) return;
-      this.spawnNote();
-      this.ui.showBeat(intensity);
+      this.spawnNote(laneIndex);
+      this.ui.showBeat(energy);
     };
 
     this.beatDetector.onFrequencyData = (data) => {
@@ -66,10 +66,8 @@ export class Game {
   }
 
   setupAudioLoading() {
-    this.ui.fileInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
+    const loadFile = async (file) => {
       if (!file) return;
-
       this.ui.showLoading();
       try {
         await this.beatDetector.loadAudio(file);
@@ -78,12 +76,36 @@ export class Game {
         }
         this.resetGame();
         this.beatDetector.play();
-        this.ui.hideLoading();
+        const name = file.name.replace(/\.[^/.]+$/, '');
+        this.ui.setPlaying(true, name);
+        this.ui.fileInput.value = '';
       } catch (err) {
         console.error('Failed to load audio:', err);
+      } finally {
         this.ui.hideLoading();
       }
-    });
+    };
+
+    this.ui.fileInput.addEventListener('change', (e) => loadFile(e.target.files[0]));
+
+    this.ui.stopBtn.addEventListener('click', () => this.stopPlayback());
+
+    this.beatDetector.onEnded = () => {
+      this.ui.setPlaying(false);
+    };
+  }
+
+  stopPlayback() {
+    this.beatDetector.stop();
+    for (const note of this.notes) note.destroy();
+    this.notes = [];
+    this.score = 0;
+    this.combo = 0;
+    this.maxCombo = 0;
+    this.ui.updateScore(0);
+    this.ui.updateCombo(0);
+    this.ui.setPlaying(false);
+    this.ui.fileInput.value = '';
   }
 
   resetGame() {
@@ -98,8 +120,7 @@ export class Game {
     this.ui.updateCombo(0);
   }
 
-  spawnNote() {
-    const laneIndex = Math.floor(Math.random() * LANES.length);
+  spawnNote(laneIndex) {
     const note = new Note(this.scene, laneIndex);
     this.notes.push(note);
   }
