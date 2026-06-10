@@ -1,4 +1,4 @@
-# ZANKYOU (残响)
+# ZANKYO (残響)
 
 A rhythm game built with pure web technologies — Three.js + Web Audio API.
 
