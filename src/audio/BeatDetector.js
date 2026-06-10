@@ -1,9 +1,4 @@
-const BANDS = [
-  { name: 'bass',   bins: [0, 1],   label: 'Kick',       lane: 0 },
-  { name: 'lowMid', bins: [2, 5],   label: 'Snare/Tom',  lane: 1 },
-  { name: 'highMid',bins: [6, 20],  label: 'Percussion', lane: 2 },
-  { name: 'high',   bins: [21, 64], label: 'Hi-hat',     lane: 3 },
-];
+import { BANDS } from './bands.js';
 
 export class BeatDetector {
   constructor() {
@@ -19,6 +14,7 @@ export class BeatDetector {
 
     this.bandState = BANDS.map(() => ({
       smoothed: 0,
+      peakDiff: 15,
       lastOnsetTime: 0,
       lastSpawnTime: 0,
     }));
@@ -58,6 +54,7 @@ export class BeatDetector {
 
     this.bandState = BANDS.map(() => ({
       smoothed: 0,
+      peakDiff: 15,
       lastOnsetTime: 0,
       lastSpawnTime: 0,
     }));
@@ -98,46 +95,51 @@ export class BeatDetector {
     if (!this.isPlaying || !this.analyser) return;
     this.scheduleAnalyze();
 
+    // Skip every other frame (halve effective sample rate)
+    this._skip = !this._skip;
+    if (this._skip) return;
+
     this.analyser.getByteFrequencyData(this.dataArray);
 
     const now = performance.now();
 
-    // Multi-band onset detection via spectral difference
-    const cooldown = 130;
-    const safetyTimeout = 600; // force spawn if nothing for 600ms
+    // Multi-band onset detection with adaptive per-band thresholds
+    const cooldown = 180;
+    const safetyTimeout = 600;
 
     for (const band of BANDS) {
       const state = this.bandState[band.lane];
       const energy = this.bandEnergy(band.bins[0], band.bins[1]);
 
-      // Very slow smoothing: tracks the background level
       if (state.smoothed === 0) {
         state.smoothed = energy;
       } else {
         state.smoothed = state.smoothed * 0.97 + energy * 0.03;
       }
 
-      // Onset = positive energy difference vs smoothed background
       const diff = energy - state.smoothed;
 
-      // Per-band minimum thresholds (higher bands naturally quieter)
-      const minDiff = band.lane <= 1 ? 20 : 12;
+      // Adaptive threshold: each band self-calibrates to its own dynamics
+      state.peakDiff = state.peakDiff * 0.995 + Math.max(diff, 0) * 0.005;
 
-      // Safety net: if no note spawned in any lane for safetyTimeout, lower the bar
+      // Threshold = 35% of recent peak diff, with absolute minimum of 8
+      const threshold = Math.max(8, state.peakDiff * 0.35);
+
+      // Safety net: if no note spawned anywhere for safetyTimeout, lower the bar
       const timeSinceAnySpawn = Math.min(
         ...this.bandState.map((s) => now - s.lastSpawnTime)
       );
-      const effectiveDiff = timeSinceAnySpawn > safetyTimeout ? diff * 1.5 : diff;
-      const effectiveMin = timeSinceAnySpawn > safetyTimeout ? minDiff * 0.5 : minDiff;
+      const effectiveThreshold = timeSinceAnySpawn > safetyTimeout
+        ? threshold * 0.5
+        : threshold;
 
       if (
-        effectiveDiff > effectiveMin &&
+        diff > effectiveThreshold &&
         now - state.lastOnsetTime > cooldown &&
         this.onBeat
       ) {
         state.lastOnsetTime = now;
         state.lastSpawnTime = now;
-        // Boost smoothed to prevent immediate re-trigger
         state.smoothed += diff * 0.3;
         this.onBeat(energy, band.lane);
       }
@@ -173,5 +175,3 @@ export class BeatDetector {
     return sum / (end - start);
   }
 }
-
-export { BANDS };
