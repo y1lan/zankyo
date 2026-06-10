@@ -1,10 +1,20 @@
 import * as THREE from 'three';
 import { NOTE_SPAWN_Z, NOTE_END_Z, NOTE_TRAVEL_TIME, LANES } from './config.js';
 
-let _id = 0;
+let _id: number = 0;
 
 export class Note {
-  constructor(scene, laneIndex) {
+  readonly id: number;
+  readonly scene: THREE.Scene;
+  readonly laneIndex: number;
+  hit: boolean;
+  missed: boolean;
+  readonly mesh: THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>;
+  readonly ring: THREE.Mesh<THREE.TorusGeometry, THREE.MeshStandardMaterial>;
+  readonly pillar: THREE.Mesh<THREE.CylinderGeometry, THREE.MeshBasicMaterial>;
+  private readonly startTime: number;
+
+  constructor(scene: THREE.Scene, laneIndex: number) {
     this.id = _id++;
     this.scene = scene;
     this.laneIndex = laneIndex;
@@ -40,11 +50,11 @@ export class Note {
     this.startTime = performance.now();
   }
 
-  update(now) {
+  update(now: number): void {
     if (this.hit || this.missed) return;
 
-    const progress = (now - this.startTime) / 1000 / NOTE_TRAVEL_TIME;
-    const z = NOTE_SPAWN_Z + (NOTE_END_Z - NOTE_SPAWN_Z) * progress;
+    const progress: number = (now - this.startTime) / 1000 / NOTE_TRAVEL_TIME;
+    const z: number = NOTE_SPAWN_Z + (NOTE_END_Z - NOTE_SPAWN_Z) * progress;
     this.mesh.position.z = z;
 
     this.mesh.rotation.x += 0.02;
@@ -52,14 +62,19 @@ export class Note {
     this.ring.rotation.x -= 0.01;
     this.ring.rotation.y -= 0.02;
 
-    const s = 0.4 + Math.min(progress, 1) * 0.6;
+    const s: number = 0.4 + Math.min(progress, 1) * 0.6;
     this.mesh.scale.setScalar(s);
   }
 
-  z() { return this.mesh.position.z; }
-  position() { return this.mesh.position.clone(); }
+  z(): number {
+    return this.mesh.position.z;
+  }
 
-  destroy() {
+  position(): THREE.Vector3 {
+    return this.mesh.position.clone();
+  }
+
+  destroy(): void {
     this.scene.remove(this.mesh);
     this.mesh.geometry.dispose();
     this.mesh.material.dispose();

@@ -4,6 +4,13 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 export class SceneSetup {
+  public scene: THREE.Scene;
+  public camera: THREE.PerspectiveCamera;
+  public renderer: THREE.WebGLRenderer;
+  public composer: EffectComposer;
+  public bloomPass: UnrealBloomPass;
+  public baseFov: number;
+
   constructor() {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0a0a0a);
@@ -31,7 +38,7 @@ export class SceneSetup {
     this.composer.addPass(this.bloomPass);
 
     this.scene.add(new THREE.AmbientLight(0x222222));
-    const pl = new THREE.PointLight(0xffffff, 2, 50);
+    const pl: THREE.PointLight = new THREE.PointLight(0xffffff, 2, 50);
     pl.position.set(0, 5, 15);
     this.scene.add(pl);
 
@@ -43,11 +50,11 @@ export class SceneSetup {
     });
   }
 
-  setBg(r, g, b) {
+  setBg(r: number, g: number, b: number): void {
     this.scene.background = new THREE.Color(r, g, b);
   }
 
-  render() {
+  render(): void {
     this.composer.render();
   }
 }

@@ -2,19 +2,21 @@ import * as THREE from 'three';
 import { LANES, NOTE_SPAWN_Z, NOTE_END_Z } from '../engine/config.js';
 
 export class LaneMandalas {
-  constructor(scene) {
+  public scene: THREE.Scene;
+
+  constructor(scene: THREE.Scene) {
     this.scene = scene;
     this._build();
   }
 
-  _build() {
-    const hitZ = 10;
+  private _build(): void {
+    const hitZ: number = 10;
 
     for (const lane of LANES) {
-      const color = new THREE.Color(lane.color);
+      const color: THREE.Color = new THREE.Color(lane.color);
 
       // Hit ring
-      const ring = new THREE.Mesh(
+      const ring: THREE.Mesh = new THREE.Mesh(
         new THREE.TorusGeometry(1.0, 0.03, 8, 32),
         new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.3 }),
       );
@@ -22,7 +24,7 @@ export class LaneMandalas {
       this.scene.add(ring);
 
       // Vertical post
-      const post = new THREE.Mesh(
+      const post: THREE.Mesh = new THREE.Mesh(
         new THREE.CylinderGeometry(0.06, 0.06, 5, 8),
         new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.25 }),
       );
@@ -30,7 +32,7 @@ export class LaneMandalas {
       this.scene.add(post);
 
       // Guide line
-      const line = new THREE.Line(
+      const line: THREE.Line = new THREE.Line(
         new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(lane.x, -3, NOTE_SPAWN_Z),
           new THREE.Vector3(lane.x, -3, NOTE_END_Z),
@@ -40,8 +42,8 @@ export class LaneMandalas {
       this.scene.add(line);
 
       // Depth markers
-      for (let z = -10; z > NOTE_SPAWN_Z; z -= 20) {
-        const m = new THREE.Mesh(
+      for (let z: number = -10; z > NOTE_SPAWN_Z; z -= 20) {
+        const m: THREE.Mesh = new THREE.Mesh(
           new THREE.TorusGeometry(0.4, 0.02, 6, 24),
           new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.2 }),
         );

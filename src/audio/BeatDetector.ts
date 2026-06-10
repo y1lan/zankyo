@@ -1,6 +1,38 @@
 import { BANDS } from './bands.js';
 
+export interface BandState {
+  smoothed: number;
+  peakDiff: number;
+  lastOnsetTime: number;
+  lastSpawnTime: number;
+}
+
+export interface FrequencyData {
+  low: number;
+  mid: number;
+  high: number;
+}
+
+export type OnBeatCallback = (energy: number, laneIndex: number) => void;
+export type OnFrequencyDataCallback = (data: FrequencyData) => void;
+export type OnEndedCallback = () => void;
+
 export class BeatDetector {
+  audioContext: AudioContext | null;
+  analyser: AnalyserNode | null;
+  source: AudioBufferSourceNode | null;
+  dataArray: Uint8Array<ArrayBuffer> | null;
+  isPlaying: boolean;
+  onBeat: OnBeatCallback | null;
+  onFrequencyData: OnFrequencyDataCallback | null;
+  onEnded: OnEndedCallback | null;
+  rafId: number | null;
+  bandState: BandState[];
+  lowFreqAvg: number;
+  midFreqAvg: number;
+  highFreqAvg: number;
+  private _skip: boolean;
+
   constructor() {
     this.audioContext = null;
     this.analyser = null;
@@ -22,14 +54,15 @@ export class BeatDetector {
     this.lowFreqAvg = 0;
     this.midFreqAvg = 0;
     this.highFreqAvg = 0;
+    this._skip = false;
   }
 
-  async loadAudio(file) {
+  async loadAudio(file: File): Promise<void> {
     this.stop();
 
-    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const arrayBuffer = await file.arrayBuffer();
-    const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const arrayBuffer: ArrayBuffer = await file.arrayBuffer();
+    const audioBuffer: AudioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
 
     this.source = this.audioContext.createBufferSource();
     this.source.buffer = audioBuffer;
@@ -60,8 +93,8 @@ export class BeatDetector {
     }));
   }
 
-  play() {
-    if (!this.source) return;
+  play(): void {
+    if (!this.source || !this.audioContext) return;
     if (this.audioContext.state === 'suspended') {
       this.audioContext.resume();
     }
@@ -70,7 +103,7 @@ export class BeatDetector {
     this.scheduleAnalyze();
   }
 
-  stop() {
+  stop(): void {
     this.isPlaying = false;
     if (this.rafId) {
       cancelAnimationFrame(this.rafId);
@@ -78,21 +111,21 @@ export class BeatDetector {
     }
     try {
       if (this.source) this.source.stop();
-    } catch (_) {}
+    } catch (_) { }
     if (this.audioContext && this.audioContext.state !== 'closed') {
-      this.audioContext.close().catch(() => {});
+      this.audioContext.close().catch(() => { });
     }
     this.source = null;
     this.analyser = null;
     this.audioContext = null;
   }
 
-  scheduleAnalyze() {
+  scheduleAnalyze(): void {
     this.rafId = requestAnimationFrame(() => this.analyze());
   }
 
-  analyze() {
-    if (!this.isPlaying || !this.analyser) return;
+  analyze(): void {
+    if (!this.isPlaying || !this.analyser || !this.dataArray) return;
     this.scheduleAnalyze();
 
     // Skip every other frame (halve effective sample rate)
@@ -101,15 +134,15 @@ export class BeatDetector {
 
     this.analyser.getByteFrequencyData(this.dataArray);
 
-    const now = performance.now();
+    const now: number = performance.now();
 
     // Multi-band onset detection with adaptive per-band thresholds
-    const cooldown = 180;
-    const safetyTimeout = 600;
+    const cooldown: number = 180;
+    const safetyTimeout: number = 600;
 
     for (const band of BANDS) {
-      const state = this.bandState[band.lane];
-      const energy = this.bandEnergy(band.bins[0], band.bins[1]);
+      const state: BandState = this.bandState[band.lane];
+      const energy: number = this.bandEnergy(band.bins[0], band.bins[1]);
 
       if (state.smoothed === 0) {
         state.smoothed = energy;
@@ -117,19 +150,19 @@ export class BeatDetector {
         state.smoothed = state.smoothed * 0.97 + energy * 0.03;
       }
 
-      const diff = energy - state.smoothed;
+      const diff: number = energy - state.smoothed;
 
       // Adaptive threshold: each band self-calibrates to its own dynamics
       state.peakDiff = state.peakDiff * 0.995 + Math.max(diff, 0) * 0.005;
 
       // Threshold = 35% of recent peak diff, with absolute minimum of 8
-      const threshold = Math.max(8, state.peakDiff * 0.35);
+      const threshold: number = Math.max(8, state.peakDiff * 0.35);
 
       // Safety net: if no note spawned anywhere for safetyTimeout, lower the bar
-      const timeSinceAnySpawn = Math.min(
-        ...this.bandState.map((s) => now - s.lastSpawnTime)
+      const timeSinceAnySpawn: number = Math.min(
+        ...this.bandState.map((s: BandState) => now - s.lastSpawnTime)
       );
-      const effectiveThreshold = timeSinceAnySpawn > safetyTimeout
+      const effectiveThreshold: number = timeSinceAnySpawn > safetyTimeout
         ? threshold * 0.5
         : threshold;
 
@@ -159,18 +192,18 @@ export class BeatDetector {
     }
   }
 
-  bandEnergy(startBin, endBin) {
-    let sum = 0;
-    for (let i = startBin; i <= endBin; i++) {
-      sum += this.dataArray[i];
+  bandEnergy(startBin: number, endBin: number): number {
+    let sum: number = 0;
+    for (let i: number = startBin; i <= endBin; i++) {
+      sum += this.dataArray![i];
     }
     return sum / (endBin - startBin + 1);
   }
 
-  rangeAvg(start, end) {
-    let sum = 0;
-    for (let i = start; i < end; i++) {
-      sum += this.dataArray[i];
+  rangeAvg(start: number, end: number): number {
+    let sum: number = 0;
+    for (let i: number = start; i < end; i++) {
+      sum += this.dataArray![i];
     }
     return sum / (end - start);
   }

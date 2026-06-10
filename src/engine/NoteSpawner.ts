@@ -1,20 +1,24 @@
+import * as THREE from 'three';
 import { Note } from './Note.js';
 import { MISS_Z } from './config.js';
 
 export class NoteSpawner {
-  constructor(scene) {
+  private scene: THREE.Scene;
+  notes: Note[];
+
+  constructor(scene: THREE.Scene) {
     this.scene = scene;
     this.notes = [];
   }
 
-  spawn(laneIndex) {
+  spawn(laneIndex: number): Note {
     const note = new Note(this.scene, laneIndex);
     this.notes.push(note);
     return note;
   }
 
-  update(now) {
-    const missed = [];
+  update(now: number): Note[] {
+    const missed: Note[] = [];
     for (let i = this.notes.length - 1; i >= 0; i--) {
       const n = this.notes[i];
       if (n.hit || n.missed) {
@@ -33,9 +37,9 @@ export class NoteSpawner {
     return missed;
   }
 
-  findInZone(laneIndex, zoneMin, zoneMax) {
-    let best = null;
-    let bestDist = Infinity;
+  findInZone(laneIndex: number, zoneMin: number, zoneMax: number): Note | null {
+    let best: Note | null = null;
+    let bestDist: number = Infinity;
     for (const n of this.notes) {
       if (n.hit || n.missed || n.laneIndex !== laneIndex) continue;
       const z = n.z();
@@ -47,7 +51,7 @@ export class NoteSpawner {
     return best;
   }
 
-  clear() {
+  clear(): void {
     for (const n of this.notes) n.destroy();
     this.notes = [];
   }

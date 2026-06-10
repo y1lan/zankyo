@@ -11,26 +11,26 @@ import { HUD } from './ui/HUD.js';
 import { JudgementPopup } from './ui/JudgementPopup.js';
 import gsap from 'gsap';
 
-// ── Rendering ──────────────────────────────────────────────
+// ── Rendering ──────────────────────────────────────────────────────
 const sceneSetup = new SceneSetup();
 const { scene, camera } = sceneSetup;
 new LaneMandalas(scene);
 const hitFx = new HitEffects(scene);
-let tunnel = null;
+let tunnel: FractalTunnel | null = null;
 
-// ── UI ─────────────────────────────────────────────────────
+// ── UI ─────────────────────────────────────────────────────────
 const controls = new Controls(bus);
 const hud = new HUD();
 const judgement = new JudgementPopup();
 
-// ── Engine ─────────────────────────────────────────────────
+// ── Engine ─────────────────────────────────────────────────────
 const spawner = new NoteSpawner(scene);
 const judge = new HitJudge(bus, spawner);
 
-// ── Audio ──────────────────────────────────────────────────
+// ── Audio ──────────────────────────────────────────────────────
 const audio = new BeatDetector();
 
-// ── Wire bus events ────────────────────────────────────────
+// ── Wire bus events ────────────────────────────────────────────────
 
 // UI → load audio
 bus.on('ui:load', async ({ file }) => {
@@ -104,8 +104,8 @@ bus.on('game:miss', () => {
   });
 });
 
-// ── Game loop ──────────────────────────────────────────────
-function loop() {
+// ── Game loop ────────────────────────────────────────────────────
+function loop(): void {
   requestAnimationFrame(loop);
 
   const missed = spawner.update(performance.now());

@@ -1,7 +1,14 @@
 # AGENTS.md - Zankyo Project Guide
 
+## TODO
+
+Update TODO file when a task is finished or a new task shall be added.
+
+See [docs/TODO.md](./docs/TODO.md).
+
 ## Notes
 
+- Use file editing tool except when editing this file (`AGENTS.md`)
 - Update this file (`AGENTS.md`) when anything changed or there're things worth noting for future.
 - All source files use ES module syntax (`import`/`export`).
 - Classes are PascalCase; files match their default export class name.
