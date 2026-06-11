@@ -15,6 +15,7 @@ import { SceneSetup } from './rendering/SceneSetup.js';
 import { FractalBackground, type NoteShaderData } from './rendering/FractalBackground.js';
 import { Controls } from './ui/Controls.js';
 import { PauseMenu } from './ui/PauseMenu.js';
+import { ResultScreen } from './ui/ResultScreen.js';
 import { HUD } from './ui/HUD.js';
 import { JudgementPopup } from './ui/JudgementPopup.js';
 import { SectorHints } from './ui/SectorHints.js';
@@ -29,6 +30,7 @@ let fractalBg: FractalBackground | null = null;
 // ── UI ─────────────────────────────────────────────────────────
 const controls = new Controls(bus);
 const pauseMenu = new PauseMenu(bus);
+const resultScreen = new ResultScreen(bus);
 const hud = new HUD();
 const judgement = new JudgementPopup();
 new SectorHints(bus);
@@ -49,6 +51,7 @@ let paused = false;
 let bgEnabled = true;
 let pauseStartTime = 0;
 let lastTime = performance.now();
+let lastSongName = '';
 let bassNorm = 0;
 let trebleNorm = 0;
 let beatmap: Beatmap | null = null;
@@ -80,8 +83,9 @@ bus.on('ui:load', async ({ file }) => {
       fractalBg = new FractalBackground(scene);
       fractalBg.setBgEnabled(bgEnabled);
     }
+    lastSongName = file.name.replace(/\.[^/.]+$/, '');
     controls.setPlaying(true);
-    hud.showSong(file.name.replace(/\.[^/.]+$/, ''));
+    hud.showSong(lastSongName);
     controls.clearFile();
   } catch (err) {
     console.error(err);
@@ -90,6 +94,7 @@ bus.on('ui:load', async ({ file }) => {
 
 // UI → stop
 bus.on('ui:stop', () => {
+  resultScreen.hide();
   pauseMenu.hide();
   audio.stop();
   spawner.clear();
@@ -144,6 +149,17 @@ audio.onEnded = () => {
   paused = false;
   controls.setPlaying(false);
   hud.hideSong();
+  hud.updateScore(0, 0);
+
+  resultScreen.show({
+    songName: lastSongName,
+    achievement: judge.getAchievement(),
+    rank: judge.getRank(),
+    maxCombo: judge.maxCombo,
+    judgements: { ...judge.judgements },
+    totalNotes: judge.totalNotes,
+    difficulty: getDifficulty(),
+  });
 };
 
 // Engine → hit → trigger shader effect and remove note visually
