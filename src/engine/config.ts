@@ -66,7 +66,7 @@ export const SIMULTANEOUS_CHANCE: number = 0.3;
 export const MAX_SHADER_NOTES: number = 12;
 
 // Note sphere radius in SDF
-export const NOTE_SPHERE_RADIUS: number = 0.06;
+export const NOTE_SPHERE_RADIUS: number = 0.1;
 
 // Scoring (maimai-style: 101% max with all Critical Perfect)
 // Base score per note = 100%. Bonus from Critical Perfect = extra 1%.
