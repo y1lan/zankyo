@@ -3,72 +3,120 @@
 ref: https://www.youtube.com/watch?v=Dz2Hm5ThNFw
 caption: ./fractal_video_cc.txt
 
-We want to use fractals to make the game more visually attractive. The fractals will be rendered using ray marching and animated in response to the music.
+We use fractals as the primary visual renderer for the game — the entire scene is ray-marched in a single full-screen GLSL fragment shader. Notes, hit ring, and effects are all SDF objects composed into the fractal scene.
+
+## Architecture
+
+```
+[Full-screen quad] → Vertex Shader (passthrough)
+                   → Fragment Shader (ray march entire scene)
+                       ├── fractalTunnel()   — infinite Menger sponge
+                       ├── noteSDF()         — note spheres + hit particles
+                       ├── sectorDotsSDF()   — 8 indicator dots on ring
+                       ├── hitZoneSDF()      — thin torus ring
+                       └── sceneSDF()        — combines all with carving
+```
+
+File: `src/rendering/FractalBackground.ts`
 
 ## Ray Marching with Signed Distance Fields (SDFs)
 
-An SDF is a function that returns the minimum distance from any point in space to an implicit surface. Simple primitives (sphere, box, plane) have closed-form SDFs; complex shapes are built by combining them with boolean operators (union, intersection, difference). Smooth-blend variants of these operators allow shapes to flow into each other.
+An SDF returns the minimum distance from any point to an implicit surface. We march rays by advancing the safe distance each step until we hit (d < 0.0005) or exceed 120 steps / 50 units.
 
-**Ray marching loop:**
-1. Fire a ray from the camera position in the pixel's projected direction (derived from the view-projection matrix).
-2. Evaluate the SDF at the current ray position to get distance `d`.
-3. Advance the ray by `d` units — guaranteed safe because the SDF returns the *minimum* distance to any surface.
-4. Repeat until `d < 1e-4` (hit) or the ray exceeds a max step count / max distance (miss).
+We use an understep factor of 0.8 for Menger precision to avoid stepping through thin geometry.
 
-Because SDFs are purely mathematical, scene repetition is free: take the fractional part of the position to tile the scene infinitely, or warp/bend the space for organic distortion.
+## Infinite Menger Sponge
 
-## Fractals
+The fractal is an **infinite Menger sponge** — no bounding box, no modular repetition of a finite cube. Algorithm:
 
-Fractals emerge from iteratively applying transformations to geometric structures. A classic example is the **Menger sponge**: recursively remove cube-shaped sections from a larger cube by running a for-loop that increases the carving frequency each iteration.
+```glsl
+float d = -1.0;       // start solid everywhere
+float s = 0.35;       // initial scale (lower = wider corridors)
+float scale = 3.0;    // fixed — not modulated by audio (prevents flicker)
 
-To add visual variety, the space is transformed each iteration — a simple rotation or positional offset is enough to break symmetry and produce intricate results.
+for (int i = 0; i < 5; i++) {
+    vec3 a = mod(p * s, 2.0) - 1.0;
+    s *= scale;
+    vec3 r = abs(1.0 - 3.0 * abs(a));
+    float da = max(r.x, r.y);
+    float db = max(r.y, r.z);
+    float dc = max(r.z, r.x);
+    float cr = (min(da, min(db, dc)) - 1.0) / s;
+    d = max(d, cr);
+}
+```
+
+The camera flies along the z-axis at (0, 0, cameraZ) — always inside the central corridor void. A subtle time-based rotation (`u_time * 0.02`) adds visual interest without disorienting.
+
+**Important:** The scale parameter is constant (3.0). Earlier versions modulated it with `u_bass` which caused frame-to-frame geometry changes and horrible flickering.
+
+## Notes as SDF Objects
+
+Notes are spheres at world positions uploaded via uniform arrays:
+- `u_notes[12]` — vec4 (xyz position, w=state)
+- `u_noteColors[12]` — vec3 (RGB)
+- `u_hitEffects[12]` — float (decay timer 0→1)
+
+Note types (maimai-style):
+- **Red/pink** `(1.0, 0.2, 0.5)` — single tap
+- **Yellow** `(1.0, 0.85, 0.2)` — simultaneous pair (always 2 at once)
+
+Notes orbit at `RING_WORLD_RADIUS` (derived from `HIT_RING_FRACTION * FOV_SCALE * NOTE_HIT_DISTANCE * 0.5`) so they align exactly with the ring and sector dots.
+
+### Hit Explosion Effect
+
+On hit, 4 SDF particle spheres splash **outward** (radially away from tunnel center), shrinking as they fly. The effect decays from 1.0 via `*= 0.88` each frame.
+
+## Hit Zone Ring & Sector Dots
+
+- **Ring:** Thin torus (radius=0.003) at `u_ringRadius` from z-axis, at `cameraZ + NOTE_HIT_DISTANCE`
+- **8 dots:** Small spheres (r=0.012) placed at each sector angle on the ring
+- Touch detection only registers hits within 25% of ring radius from the ring itself
+
+## Scene Composition
+
+`sceneSDF()` combines all elements with priority: notes > ring/dots > fractal.
+
+The fractal is **carved** around notes and ring using `max(fractal, -(objectDist - margin))` so they're never occluded by Menger geometry.
 
 ## Lighting
 
-Surface normals are approximated with the **central difference method** on the SDF gradient at the intersection point. From there:
+- Surface normals via central-difference gradient
+- Directional light (diffuse + specular)
+- **Note lighting on walls:** Each active note casts colored light onto nearby fractal surfaces (attenuation = `1/(1 + d² * 1.5)`)
+- Fractal: monochrome base + note-emitted color bleeding
+- Notes: self-emission + bright flash on hit (`color * ef * 3.0`)
+- Distance fog: `1 - exp(-dist * 0.04)`
+- AO approximation from step count
 
-- **Reflections:** reflect the camera ray off the surface normal, re-run ray marching in the new direction, then blend the secondary hit color with the primary surface color.
-- **Shadows:** cast a shadow ray toward each light source; if the ray intersects geometry before reaching the light, the point is in shadow.
+## Audio Uniforms
 
-## Wiring the Audio to the Fractal
+| Uniform | Source | Effect |
+|---------|--------|--------|
+| `u_bass` | Low-frequency energy | Smoothed for ambient modulation |
+| `u_treble` | High-frequency energy | Smoothed for ambient modulation |
+| `u_transient` | Beat detection | Global subtle flash, decays `*= 0.92` |
+| `u_shake` | Miss events | Camera offset, decays `*= 0.92` |
 
-Audio data is processed on the CPU then uploaded to the GPU each frame.
-
-**Frequency extraction:** Apply the Discrete Fourier Transform (DFT/FFT) to a window of PCM samples centered on the current playback timestamp. This converts amplitude-over-time data into frequency magnitudes. The resulting spectrum (low pitch on the left, high pitch on the right) is passed to the shader.
-
-**Transient detection:** Instead of reacting only to loudness, detect *transients* — sudden spikes that occur when a note is struck. Method: track the signal with two envelopes, one fast and one slow. When they diverge significantly, a transient has occurred. Trigger visual events (expansions, color shifts) on transients for a more dynamic feel.
-
-**Additional modulators:**
-- **LFOs (Low Frequency Oscillators):** sinusoidal or other periodic signals that vary properties smoothly over time, independent of audio content.
-- **Beat generators:** locked to song BPM for reliable rhythmic sync.
-
-**Shader uniforms:**
-- `u_bass`: energy in the low-frequency bands — drive the fractal's folding scale factor. Bass hits cause the geometry to mutate or expand.
-- `u_treble`: energy in the high-frequency bands — map to the lighting/color function so hi-hats and snares flash neon tones.
-- `u_transient`: fires on detected transients — use for one-shot visual bursts.
+**Critical lesson:** Never modulate SDF geometry parameters (scale, iteration count) with audio — causes per-frame geometry changes that flicker violently. Only modulate lighting/color/post-processing.
 
 ## Post-Processing
 
-Three.js's `EffectComposer` (already in use) makes this low-effort:
+- `HalfFloatType` render target for HDR headroom
+- `EffectComposer` with `UnrealBloomPass`
+- `ACESFilmicToneMapping` via `renderer.toneMapping`
 
-- **Tone mapping:** built-in via `renderer.toneMapping` (e.g. `ACESFilmicToneMapping`) — no extra pass needed.
-- **Bloom/glow:** already configured with `UnrealBloomPass`.
+## Performance: Cone Marching (Not Yet Implemented)
 
-To enable HDR output from the fractal shader, just ensure the render target uses `HalfFloatType` (or `FloatType`) so colors can exceed 0–1 before tone mapping compresses them back.
+Potential optimization: cast coarse cones per pixel cluster to get safe starting distances, then individual rays start from pre-computed depth. Would reduce per-pixel march iterations significantly.
 
-## Performance: Cone Marching
+## Ring Radius Calculation
 
-Ray marching can be expensive — the SDF may be evaluated hundreds of times per ray. **Cone marching** amortises this cost:
+The ring must match between shader (world units) and HitJudge (screen pixels):
 
-1. Group pixels into coarse clusters (e.g. 10×10).
-2. For each cluster, cast a cone from the camera through the cluster boundary and march it until the SDF distance falls below the cone's radius at that step. This gives a conservative "safe starting distance" covering all rays in the cluster.
-3. Store this estimate in a buffer. Individual pixel ray marches start from this pre-computed distance rather than from zero.
+```
+World: RING_WORLD_RADIUS = HIT_RING_FRACTION * FOV_SCALE * NOTE_HIT_DISTANCE * 0.5
+Screen: ringPixelRadius = HIT_RING_FRACTION * min(width, height) * 0.5
+```
 
-The first iterations are effectively computed 100× more cheaply. Actual speedup is moderate (not 100×) because secondary rays (reflections, shadows) don't benefit, and rays still need to march further after the initial estimate.
-
-## Implementation Notes
-
-1. Start from a reference fractal on Shadertoy (e.g. "Mandelbulb", "Menger Sponge", "Fractal Tunnel") and port the GLSL to a Three.js `ShaderMaterial` (GLSL) or a WebGPU compute/fragment shader (WGSL).
-2. Add audio uniforms (`u_bass`, `u_treble`, `u_transient`) and multiply them into the fractal's SDF scale and lighting expressions.
-3. Match the raymarching camera's FOV to Three.js's camera FOV so the fractal background aligns with the rasterized foreground.
-4. Feed the `EffectComposer` pipeline for tone mapping and bloom.
+Both derive from the same `HIT_RING_FRACTION` constant (currently 0.5) ensuring visual-touch alignment.

@@ -19,7 +19,7 @@
       {
         devShells.default = mkShell {
           buildInputs = [
-            pnpm
+            nodejs_26
           ];
         };
       }

@@ -2,24 +2,44 @@
 
 - [x] Use Typescript
 - [x] Fractal Demo
-  - [x] Port a Shadertoy fractal (e.g. Menger sponge / fractal tunnel) to a Three.js `ShaderMaterial` with basic ray marching
-  - [x] Render a demo fractal with some guessed constant
 - [x] Fractal from music MVP (See [fractal.md](./fractal.md))
-  - [x] Extract frequency bands from `BeatDetector`'s analyser → compute `u_bass`, `u_treble` each frame
-  - [x] Wire uniforms into the fractal shader (scale folding by bass, color by treble, burst on transient)
-  - [x] Compose fractal as background — match raymarching FOV to the Three.js camera
-- [ ] Fractal-Integrated Gameplay
-  - [ ] Unify scene: camera flies forward through monochrome fractal tunnel (replace rasterized note highway)
-  - [ ] Notes as SDF spheres lodged in fractal voids — smooth-union blend so geometry cradles each note
-  - [ ] Upload note positions as uniforms (cap ~8 visible), colored per lane/sector
-  - [ ] Radial lane sectors (quadrants via `atan2`) — map to input keys
-  - [ ] Hit zone: ring/iris at fixed z-depth from camera, pulse on beat
-  - [ ] Timing judgement from z-proximity (reuse HitJudge logic)
-  - [ ] Notes emit colored light onto surrounding monochrome fractal walls
-  - [ ] On-hit: fractal cracks open locally + ball bursts along fractal edges
-  - [ ] On-miss: ball dims and fractal void absorbs it (fills back in)
-- [ ] Fix overshaking
-- [ ] Fix camera shifting
+- [x] Fractal-Integrated Gameplay
+  - [x] Notes as SDF spheres embedded in fractal
+  - [x] Note lighting bleeds onto fractal walls
+  - [x] Fractal carves voids around notes/ring (never occluded)
+- [x] Fix overshaking
+- [x] Fix camera shifting
+- [x] Fix fractal flashing (was caused by audio-modulated SDF scale)
+- [x] Infinite Menger sponge (proper volume, not flat wall)
+- [x] Wider corridors (s=0.35)
+- [x] maimai-style input & scoring
+  - [x] 8 radial sectors (octagonal)
+  - [x] Touchscreen input (angle from screen center → sector)
+  - [x] Touch detection only on the ring (25% tolerance band)
+  - [x] 5-tier judgement: Critical Perfect / Perfect / Great / Good / Miss
+  - [x] 101% max score (Critical Perfect bonus)
+  - [x] Rank system: D → C → B → A → AA → AAA → S → S+ → SS → SS+ → SSS → SSS+
+  - [x] Achievement % display in HUD (score hidden, % only)
+- [x] Note types (maimai-style)
+  - [x] Red/pink single tap notes
+  - [x] Yellow simultaneous pair notes
+  - [x] Reduced spawn rate (BEAT_SPAWN_CHANCE = 0.35)
+- [x] Hit ring with 8 sector dots
+  - [x] Ring sized as HIT_RING_FRACTION * small screen side
+  - [x] Notes orbit at same radius as ring (unified RING_WORLD_RADIUS)
+  - [x] Thin ring (torus r=0.003) + dot indicators (sphere r=0.012)
+- [x] Hit explosion effect (4 particles splash outward)
+- [x] Pause/resume (⏸/▶ button + space bar)
+  - [x] AudioContext suspend/resume
+  - [x] Game loop freeze
+- [x] UI cleanup
+  - [x] Icon buttons (⏸ ▶ ⏹) instead of text
+  - [x] Removed BEAT! flash
+  - [x] Removed score display (% only)
+- [x] HDR pipeline (HalfFloatType + bloom + tone mapping)
+- [x] Remove gsap dependency
+- [x] Centralize gameplay/audio/rendering/UI tunables into `src/engine/config.ts`
+- [ ] Notes appear abruptly — could fade in based on distance
 - [ ] (Optional) Better Fractal
   - [ ] Add transient detection (dual-envelope method) → `u_transient` uniform
   - [ ] Add reflections (secondary ray march)
@@ -28,3 +48,4 @@
   - [ ] Implement cone marching for performance if frame rate is too low
 - [ ] (Optional) Better beatmap generation
   - [ ] Support multiple difficulty
+  - [ ] Proper BPM detection for more musical note timing

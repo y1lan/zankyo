@@ -3,6 +3,7 @@ import type { Bus } from '../core/bus.js';
 export class Controls {
   public el: HTMLDivElement;
   public stopBtn: HTMLButtonElement;
+  public pauseBtn: HTMLButtonElement;
   public fileInput: HTMLInputElement;
   public loadLabel: HTMLLabelElement;
   public newLabel: HTMLLabelElement;
@@ -18,7 +19,10 @@ export class Controls {
       display: 'flex', gap: '16px', alignItems: 'center', pointerEvents: 'none', zIndex: '10',
     });
 
-    this.stopBtn = this._btn('STOP', 'stop-btn', { borderColor: 'rgba(255,100,100,0.5)', background: 'rgba(255,50,50,0.1)' }) as HTMLButtonElement;
+    this.pauseBtn = this._btn('⏸', 'pause-btn', { borderColor: 'rgba(255,200,50,0.5)', background: 'rgba(255,200,50,0.1)', fontSize: '1.4rem', padding: '10px 20px' }) as HTMLButtonElement;
+    this.pauseBtn.style.display = 'none';
+
+    this.stopBtn = this._btn('⏹', 'stop-btn', { borderColor: 'rgba(255,100,100,0.5)', background: 'rgba(255,50,50,0.1)', fontSize: '1.4rem', padding: '10px 20px' }) as HTMLButtonElement;
     this.stopBtn.style.display = 'none';
 
     this.fileInput = document.createElement('input');
@@ -39,8 +43,16 @@ export class Controls {
       const f = target.files?.[0];
       if (f) bus.emit('ui:load', { file: f });
     });
+    this.pauseBtn.addEventListener('click', () => bus.emit('ui:pause'));
     this.stopBtn.addEventListener('click', () => bus.emit('ui:stop'));
-    // newLabel shares the same file input
+
+    // Space bar for debug pause
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        bus.emit('ui:pause');
+      }
+    });
   }
 
   private _btn(text: string, id: string, extras: Partial<CSSStyleDeclaration> = {}): HTMLElement {
@@ -65,6 +77,11 @@ export class Controls {
     this.loadLabel.style.display = playing ? 'none' : 'inline-block';
     this.newLabel.style.display = playing ? 'inline-block' : 'none';
     this.stopBtn.style.display = playing ? 'inline-block' : 'none';
+    this.pauseBtn.style.display = playing ? 'inline-block' : 'none';
+  }
+
+  setPaused(paused: boolean): void {
+    this.pauseBtn.textContent = paused ? '▶' : '⏸';
   }
 
   clearFile(): void { this.fileInput.value = ''; }

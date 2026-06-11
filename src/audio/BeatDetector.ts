@@ -1,4 +1,25 @@
 import { BANDS } from './bands.js';
+import {
+  AUDIO_FFT_SIZE,
+  AUDIO_SMOOTHING_TIME_CONSTANT,
+  AUDIO_INITIAL_PEAK_DIFF,
+  AUDIO_ONSET_COOLDOWN_MS,
+  AUDIO_SAFETY_TIMEOUT_MS,
+  AUDIO_THRESHOLD_MIN,
+  AUDIO_THRESHOLD_PEAK_FACTOR,
+  AUDIO_SAFETY_THRESHOLD_SCALE,
+  AUDIO_SMOOTH_KEEP,
+  AUDIO_SMOOTH_ADD,
+  AUDIO_PEAK_KEEP,
+  AUDIO_PEAK_ADD,
+  AUDIO_ONSET_SMOOTH_BOOST,
+  AUDIO_RANGE_LOW_START_BIN,
+  AUDIO_RANGE_LOW_END_BIN,
+  AUDIO_RANGE_MID_START_BIN,
+  AUDIO_RANGE_MID_END_BIN,
+  AUDIO_RANGE_HIGH_START_BIN,
+  AUDIO_RANGE_HIGH_END_BIN,
+} from '../engine/config.js';
 
 export interface BandState {
   smoothed: number;
@@ -46,7 +67,7 @@ export class BeatDetector {
 
     this.bandState = BANDS.map(() => ({
       smoothed: 0,
-      peakDiff: 15,
+      peakDiff: AUDIO_INITIAL_PEAK_DIFF,
       lastOnsetTime: 0,
       lastSpawnTime: 0,
     }));
@@ -77,8 +98,8 @@ export class BeatDetector {
     };
 
     this.analyser = this.audioContext.createAnalyser();
-    this.analyser.fftSize = 256;
-    this.analyser.smoothingTimeConstant = 0.3;
+    this.analyser.fftSize = AUDIO_FFT_SIZE;
+    this.analyser.smoothingTimeConstant = AUDIO_SMOOTHING_TIME_CONSTANT;
 
     this.source.connect(this.analyser);
     this.analyser.connect(this.audioContext.destination);
@@ -87,7 +108,7 @@ export class BeatDetector {
 
     this.bandState = BANDS.map(() => ({
       smoothed: 0,
-      peakDiff: 15,
+      peakDiff: AUDIO_INITIAL_PEAK_DIFF,
       lastOnsetTime: 0,
       lastSpawnTime: 0,
     }));
@@ -101,6 +122,27 @@ export class BeatDetector {
     this.source.start(0);
     this.isPlaying = true;
     this.scheduleAnalyze();
+  }
+
+  pause(): void {
+    if (!this.audioContext) return;
+    if (this.audioContext.state === 'running') {
+      this.isPlaying = false;
+      if (this.rafId) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+      this.audioContext.suspend().catch(() => {});
+    } else if (this.audioContext.state === 'suspended') {
+      this.audioContext.resume().then(() => {
+        this.isPlaying = true;
+        this.scheduleAnalyze();
+      }).catch(() => {});
+    }
+  }
+
+  get paused(): boolean {
+    return this.audioContext?.state === 'suspended';
   }
 
   stop(): void {
@@ -137,8 +179,8 @@ export class BeatDetector {
     const now: number = performance.now();
 
     // Multi-band onset detection with adaptive per-band thresholds
-    const cooldown: number = 180;
-    const safetyTimeout: number = 600;
+    const cooldown: number = AUDIO_ONSET_COOLDOWN_MS;
+    const safetyTimeout: number = AUDIO_SAFETY_TIMEOUT_MS;
 
     for (const band of BANDS) {
       const state: BandState = this.bandState[band.lane];
@@ -147,23 +189,23 @@ export class BeatDetector {
       if (state.smoothed === 0) {
         state.smoothed = energy;
       } else {
-        state.smoothed = state.smoothed * 0.97 + energy * 0.03;
+        state.smoothed = state.smoothed * AUDIO_SMOOTH_KEEP + energy * AUDIO_SMOOTH_ADD;
       }
 
       const diff: number = energy - state.smoothed;
 
       // Adaptive threshold: each band self-calibrates to its own dynamics
-      state.peakDiff = state.peakDiff * 0.995 + Math.max(diff, 0) * 0.005;
+      state.peakDiff = state.peakDiff * AUDIO_PEAK_KEEP + Math.max(diff, 0) * AUDIO_PEAK_ADD;
 
       // Threshold = 35% of recent peak diff, with absolute minimum of 8
-      const threshold: number = Math.max(8, state.peakDiff * 0.35);
+      const threshold: number = Math.max(AUDIO_THRESHOLD_MIN, state.peakDiff * AUDIO_THRESHOLD_PEAK_FACTOR);
 
       // Safety net: if no note spawned anywhere for safetyTimeout, lower the bar
       const timeSinceAnySpawn: number = Math.min(
         ...this.bandState.map((s: BandState) => now - s.lastSpawnTime)
       );
       const effectiveThreshold: number = timeSinceAnySpawn > safetyTimeout
-        ? threshold * 0.5
+        ? threshold * AUDIO_SAFETY_THRESHOLD_SCALE
         : threshold;
 
       if (
@@ -173,15 +215,15 @@ export class BeatDetector {
       ) {
         state.lastOnsetTime = now;
         state.lastSpawnTime = now;
-        state.smoothed += diff * 0.3;
+        state.smoothed += diff * AUDIO_ONSET_SMOOTH_BOOST;
         this.onBeat(energy, band.lane);
       }
     }
 
     // Full-range averages for visual effects
-    this.lowFreqAvg = this.rangeAvg(0, 10);
-    this.midFreqAvg = this.rangeAvg(10, 50);
-    this.highFreqAvg = this.rangeAvg(50, 128);
+    this.lowFreqAvg = this.rangeAvg(AUDIO_RANGE_LOW_START_BIN, AUDIO_RANGE_LOW_END_BIN);
+    this.midFreqAvg = this.rangeAvg(AUDIO_RANGE_MID_START_BIN, AUDIO_RANGE_MID_END_BIN);
+    this.highFreqAvg = this.rangeAvg(AUDIO_RANGE_HIGH_START_BIN, AUDIO_RANGE_HIGH_END_BIN);
 
     if (this.onFrequencyData) {
       this.onFrequencyData({

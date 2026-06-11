@@ -1,9 +1,10 @@
-import type { Vector3 } from 'three';
+import type { Note } from '../engine/Note.js';
 
 export interface BusEvents {
   'ui:load': { file: File };
   'ui:stop': void;
-  'game:hit': { position: Vector3; quality: 'perfect' | 'good' };
+  'ui:pause': void;
+  'game:hit': { note: Note; quality: 'perfect' | 'good' };
   'game:score': { score: number; combo: number };
   'game:judgement': { text: string; color: string };
   'game:miss': void;

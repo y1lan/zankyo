@@ -2,6 +2,16 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import {
+  SCENE_CAMERA_FOV_DEG,
+  SCENE_CAMERA_NEAR,
+  SCENE_CAMERA_FAR,
+  SCENE_MAX_PIXEL_RATIO,
+  SCENE_TONE_MAPPING_EXPOSURE,
+  BLOOM_STRENGTH,
+  BLOOM_RADIUS,
+  BLOOM_THRESHOLD,
+} from '../engine/config.js';
 
 export class SceneSetup {
   public scene: THREE.Scene;
@@ -9,24 +19,20 @@ export class SceneSetup {
   public renderer: THREE.WebGLRenderer;
   public composer: EffectComposer;
   public bloomPass: UnrealBloomPass;
-  public baseFov: number;
 
   constructor() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0a0a0a);
 
+    // Camera is only used for the EffectComposer pipeline; actual view is in the shader
     this.camera = new THREE.PerspectiveCamera(
-      75, window.innerWidth / window.innerHeight, 0.1, 200
+      SCENE_CAMERA_FOV_DEG, window.innerWidth / window.innerHeight, SCENE_CAMERA_NEAR, SCENE_CAMERA_FAR
     );
-    this.camera.position.set(0, 5, 20);
-    this.camera.lookAt(0, 0, 10);
-    this.baseFov = this.camera.fov;
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, SCENE_MAX_PIXEL_RATIO));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1;
+    this.renderer.toneMappingExposure = SCENE_TONE_MAPPING_EXPOSURE;
     document.body.appendChild(this.renderer.domElement);
 
     this.composer = new EffectComposer(this.renderer,
@@ -37,14 +43,9 @@ export class SceneSetup {
     this.composer.addPass(new RenderPass(this.scene, this.camera));
 
     this.bloomPass = new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85
+      new THREE.Vector2(window.innerWidth, window.innerHeight), BLOOM_STRENGTH, BLOOM_RADIUS, BLOOM_THRESHOLD
     );
     this.composer.addPass(this.bloomPass);
-
-    this.scene.add(new THREE.AmbientLight(0x222222));
-    const pl: THREE.PointLight = new THREE.PointLight(0xffffff, 2, 50);
-    pl.position.set(0, 5, 15);
-    this.scene.add(pl);
 
     window.addEventListener('resize', () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
@@ -52,10 +53,6 @@ export class SceneSetup {
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       this.composer.setSize(window.innerWidth, window.innerHeight);
     });
-  }
-
-  setBg(r: number, g: number, b: number): void {
-    this.scene.background = new THREE.Color(r, g, b);
   }
 
   render(): void {

@@ -11,6 +11,7 @@
 - All source files use ES module syntax (`import`/`export`).
 - Classes are PascalCase; files match their default export class name.
 - Constants are `UPPER_SNAKE_CASE`, exported individually.
+- Tunable constants and runtime flags should live in `src/engine/config.ts` and be imported where used.
 
 ## Architecture and Data Flow
 

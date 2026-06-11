@@ -1,3 +1,5 @@
+import { JUDGEMENT_POPUP_ANIMATION_DURATION_SEC } from '../engine/config.js';
+
 export class JudgementPopup {
   public el: HTMLDivElement;
 
@@ -31,6 +33,6 @@ export class JudgementPopup {
     this.el.style.textShadow = `0 0 20px ${color}`;
     this.el.style.animation = "none";
     void this.el.offsetWidth;
-    this.el.style.animation = "jpop 0.5s ease-out forwards";
+    this.el.style.animation = `jpop ${JUDGEMENT_POPUP_ANIMATION_DURATION_SEC}s ease-out forwards`;
   }
 }
