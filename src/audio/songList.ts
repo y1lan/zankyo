@@ -7,4 +7,5 @@ export interface SongEntry {
 
 export const SONG_LIST: SongEntry[] = [
   { id: 'anytime-anywhere', title: 'Anytime Anywhere', file: '/songs/anytime-anywhere-cut.flac' },
+  { id: 'touhou-mystia-s-izakaya', title: '古城默々、人生悠々', file: '/songs/古城默々、人生悠々.mp3' },
 ];
