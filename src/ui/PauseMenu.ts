@@ -36,8 +36,7 @@ const STYLE = `
   border-color: rgba(255,255,255,0.6);
 }
 #pm-resume { border-color: rgba(255,200,50,0.5);  background: rgba(255,200,50,0.08); }
-#pm-stop   { border-color: rgba(255,100,100,0.5); background: rgba(255,50,50,0.08); }
-#pm-new    { border-color: rgba(100,200,255,0.4); }
+#pm-menu   { border-color: rgba(255,100,100,0.5); background: rgba(255,50,50,0.08); }
 #pm-bg     { border-color: rgba(100,255,150,0.4); background: rgba(100,255,150,0.06); }
 #pm-countdown {
   display: none;
@@ -64,7 +63,7 @@ export class PauseMenu {
   private _counting: boolean = false;
   private _bgEnabled: boolean = true;
 
-  constructor(bus: Bus, fileInput: HTMLInputElement) {
+  constructor(bus: Bus) {
     this.bus = bus;
 
     const style = document.createElement('style');
@@ -83,25 +82,19 @@ export class PauseMenu {
     this.buttonsEl = document.createElement('div');
     Object.assign(this.buttonsEl.style, { display: 'flex', flexDirection: 'column', gap: '14px' });
 
-    const resumeBtn = this._btn('RESUME', 'pm-resume');
-    const stopBtn   = this._btn('STOP',   'pm-stop');
-    const newBtn    = this._btn('NEW TRACK', 'pm-new');
-    this.bgBtn      = this._btn('BG ON',  'pm-bg') as HTMLButtonElement;
+    const resumeBtn = this._btn('RESUME',       'pm-resume');
+    const menuBtn   = this._btn('BACK TO MENU', 'pm-menu');
+    this.bgBtn      = this._btn('BG ON',        'pm-bg') as HTMLButtonElement;
 
     resumeBtn.addEventListener('click', () => this._startCountdown());
-    stopBtn.addEventListener('click',   () => bus.emit('ui:stop'));
-    newBtn.addEventListener('click',    () => fileInput.click());
+    menuBtn.addEventListener('click',   () => bus.emit('ui:stop'));
     this.bgBtn.addEventListener('click', () => {
       this._bgEnabled = !this._bgEnabled;
       this._updateBgBtn();
       bus.emit('ui:toggle-bg');
     });
 
-    fileInput.addEventListener('change', () => {
-      if (fileInput.files?.[0]) this.hide();
-    });
-
-    this.buttonsEl.append(resumeBtn, stopBtn, newBtn, this.bgBtn);
+    this.buttonsEl.append(resumeBtn, menuBtn, this.bgBtn);
     panel.append(this.countdownEl, this.buttonsEl);
     this.el.appendChild(panel);
     document.body.appendChild(this.el);
