@@ -18,6 +18,20 @@ declare global {
   }
 }
 
+// KeyboardEvent.code → sector index. Ring is rotated π/8 clockwise so
+// sectors 0–3 sit on the right half (top→bottom) and 4–7 on the left.
+// Index fingers (F, J) take the top of each side; pinkies the bottom.
+export const KEY_TO_SECTOR: Record<string, number> = {
+  KeyF: 7,       // left side, top
+  KeyD: 6,       // left side, upper
+  KeyS: 5,       // left side, lower
+  KeyA: 4,       // left side, bottom
+  KeyJ: 0,       // right side, top
+  KeyK: 1,       // right side, upper
+  KeyL: 2,       // right side, lower
+  Semicolon: 3,  // right side, bottom
+};
+
 export class HitJudge {
   private bus: Bus;
   private noteSpawner: NoteSpawner;
@@ -37,6 +51,19 @@ export class HitJudge {
     this.judgements = { critical: 0, perfect: 0, great: 0, good: 0, miss: 0 };
 
     this._setupTouch();
+    this._setupKeyboard();
+  }
+
+  private _setupKeyboard(): void {
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.repeat) return;
+      if (document.activeElement?.tagName === 'INPUT') return;
+      const sectorIndex = KEY_TO_SECTOR[e.code];
+      if (sectorIndex === undefined) return;
+      e.preventDefault();
+      this.bus.emit('input:key', { sectorIndex });
+      this._handle(sectorIndex);
+    });
   }
 
   /** Get ring radius in screen pixels */
@@ -93,8 +120,7 @@ export class HitJudge {
   private _screenToSector(x: number, y: number): number {
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
-    // Shader camera basis mirrors screen X, so input must do the same.
-    const dx = cx - x;
+    const dx = x - cx;
     const dy = -(y - cy); // flip y (screen y is inverted)
     const angle = Math.atan2(dy, dx);
 

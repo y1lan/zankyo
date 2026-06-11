@@ -15,6 +15,7 @@ import { FractalBackground, type NoteShaderData } from './rendering/FractalBackg
 import { Controls } from './ui/Controls.js';
 import { HUD } from './ui/HUD.js';
 import { JudgementPopup } from './ui/JudgementPopup.js';
+import { SectorHints } from './ui/SectorHints.js';
 
 // ── Rendering ──────────────────────────────────────────────────────
 const sceneSetup = new SceneSetup();
@@ -25,6 +26,7 @@ let fractalBg: FractalBackground | null = null;
 const controls = new Controls(bus);
 const hud = new HUD();
 const judgement = new JudgementPopup();
+new SectorHints(bus);
 
 // ── Engine ─────────────────────────────────────────────────────
 const spawner = new NoteSpawner();

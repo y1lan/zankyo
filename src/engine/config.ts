@@ -34,17 +34,19 @@ export interface Sector {
 
 // 8 sectors evenly spaced, starting from top going clockwise
 export const SECTORS: Sector[] = Array.from({ length: 8 }, (_, i) => {
-  const angle = (Math.PI / 2) - (i * Math.PI / 4); // top=π/2, clockwise
+  // Rotated by π/8 clockwise so 4 sectors fall on each side of the vertical
+  // axis — left/right hands get symmetric halves on the keyboard.
+  const angle = (Math.PI / 2) - (i * Math.PI / 4) - (Math.PI / 8);
   // Alternate colors: warm and cool
   const hues: [number, number, number][] = [
-    [0.4, 0.8, 1.0],   // top - cyan
-    [0.6, 0.6, 1.0],   // top-right - lavender
-    [1.0, 0.4, 0.8],   // right - pink
-    [1.0, 0.5, 0.3],   // bottom-right - orange
-    [1.0, 0.9, 0.3],   // bottom - yellow
-    [0.5, 1.0, 0.4],   // bottom-left - green
-    [0.3, 0.7, 1.0],   // left - blue
-    [0.7, 0.4, 1.0],   // top-left - purple
+    [0.4, 0.8, 1.0],   // right-top - cyan
+    [0.6, 0.6, 1.0],   // right-upper - lavender
+    [1.0, 0.4, 0.8],   // right-lower - pink
+    [1.0, 0.5, 0.3],   // right-bottom - orange
+    [1.0, 0.9, 0.3],   // left-bottom - yellow
+    [0.5, 1.0, 0.4],   // left-lower - green
+    [0.3, 0.7, 1.0],   // left-upper - blue
+    [0.7, 0.4, 1.0],   // left-top - purple
   ];
   return { angle, color: hues[i] };
 });
