@@ -37,10 +37,10 @@ const audio = new BeatDetector();
 let cameraZ = 0;
 let playing = false;
 let paused = false;
+let bgEnabled = true;
 let lastTime = performance.now();
 let bassNorm = 0;
 let trebleNorm = 0;
-const ENABLE_BEAT_FLASH = false; // temporary toggle
 
 // ── Wire bus events ────────────────────────────────────────────────
 
@@ -54,7 +54,10 @@ bus.on('ui:load', async ({ file }) => {
     cameraZ = 0;
     lastTime = performance.now();
     playing = true;
-    if (!fractalBg) fractalBg = new FractalBackground(scene);
+    if (!fractalBg) {
+      fractalBg = new FractalBackground(scene);
+      fractalBg.setBgEnabled(bgEnabled);
+    }
     controls.setPlaying(true);
     hud.showSong(file.name.replace(/\.[^/.]+$/, ''));
     controls.clearFile();
@@ -137,6 +140,12 @@ bus.on('game:judgement', ({ text, color }) => {
 // Engine → miss → shake
 bus.on('game:miss', () => {
   if (fractalBg) fractalBg.onMiss();
+});
+
+// UI → toggle background rendering
+bus.on('ui:toggle-bg', () => {
+  bgEnabled = !bgEnabled;
+  if (fractalBg) fractalBg.setBgEnabled(bgEnabled);
 });
 
 // ── Game loop ────────────────────────────────────────────────────

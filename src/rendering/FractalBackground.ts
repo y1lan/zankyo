@@ -31,6 +31,7 @@ uniform float u_transient;
 uniform float u_cameraZ;
 uniform float u_shake;
 uniform float u_ringRadius;
+uniform float u_showBg;
 
 // Notes: xyz = world position, w = state (1.0=active, 0.5=hit, 0.0=miss/empty)
 uniform vec4 u_notes[${MAX_SHADER_NOTES}];
@@ -322,11 +323,13 @@ void main() {
     float spec = pow(max(dot(reflect(-lightDir, n), -rd), 0.0), 32.0);
 
     if (hit.material == 0) {
-      // Fractal: visible monochrome with good ambient
-      vec3 baseCol = vec3(0.12, 0.13, 0.15);
-      col = baseCol * (diff * 0.8 + 0.25) + vec3(0.25) * spec * 0.3;
-      // Subtle note-emitted light on fractal walls
-      col += noteLighting(p, n) * 0.25;
+      if (u_showBg > 0.5) {
+        // Fractal: visible monochrome with good ambient
+        vec3 baseCol = vec3(0.12, 0.13, 0.15);
+        col = baseCol * (diff * 0.8 + 0.25) + vec3(0.25) * spec * 0.3;
+        // Subtle note-emitted light on fractal walls
+        col += noteLighting(p, n) * 0.25;
+      }
     } else if (hit.material == 1) {
       // Note sphere: visible but not blinding
       col = hit.noteColor * (diff * 0.3 + 0.7);
@@ -402,6 +405,7 @@ export class FractalBackground {
         u_cameraZ: { value: 0 },
         u_shake: { value: 0 },
         u_ringRadius: { value: this._calcRingRadius() },
+        u_showBg: { value: 1.0 },
         u_notes: { value: emptyNotes },
         u_noteColors: { value: emptyColors },
         u_hitEffects: { value: emptyEffects },
@@ -432,6 +436,10 @@ export class FractalBackground {
     const fovScale = SHADER_FOV;
     const hitDist = NOTE_HIT_DISTANCE;
     return HIT_RING_FRACTION * fovScale * hitDist * 0.5;
+  }
+
+  setBgEnabled(enabled: boolean): void {
+    this.material.uniforms.u_showBg.value = enabled ? 1.0 : 0.0;
   }
 
   onBeat(): void {
