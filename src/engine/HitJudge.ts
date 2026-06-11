@@ -18,16 +18,18 @@ declare global {
   }
 }
 
-// KeyboardEvent.code → sector index (sector order: 0=top, clockwise)
+// KeyboardEvent.code → sector index. Ring is rotated π/8 clockwise so
+// sectors 0–3 sit on the right half (top→bottom) and 4–7 on the left.
+// Index fingers (F, J) take the top of each side; pinkies the bottom.
 export const KEY_TO_SECTOR: Record<string, number> = {
-  KeyW: 0,      // ↑ top
-  KeyO: 1,      // ↗ top-right
-  KeyL: 2,      // → right
-  Period: 3,    // ↘ bot-right
-  KeyK: 4,      // ↓ bottom
-  KeyZ: 5,      // ↙ bot-left
-  KeyA: 6,      // ← left
-  KeyQ: 7,      // ↖ top-left
+  KeyF: 7,       // left side, top
+  KeyD: 6,       // left side, upper
+  KeyS: 5,       // left side, lower
+  KeyA: 4,       // left side, bottom
+  KeyJ: 0,       // right side, top
+  KeyK: 1,       // right side, upper
+  KeyL: 2,       // right side, lower
+  Semicolon: 3,  // right side, bottom
 };
 
 export class HitJudge {

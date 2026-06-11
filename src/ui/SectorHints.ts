@@ -27,7 +27,7 @@ export class SectorHints {
     // Reverse map: sector index → key label
     const sectorToLabel: Record<number, string> = {};
     for (const [code, idx] of Object.entries(KEY_TO_SECTOR)) {
-      sectorToLabel[idx] = code === 'Period' ? '.' : code.replace(/^Key/, '');
+      sectorToLabel[idx] = code === 'Semicolon' ? ';' : code.replace(/^Key/, '');
     }
 
     for (let i = 0; i < SECTORS.length; i++) {

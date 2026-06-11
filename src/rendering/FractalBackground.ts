@@ -168,7 +168,7 @@ float sectorDotsSDF(vec3 p, float hitZ) {
   vec3 q = p;
   q.z -= hitZ;
   for (int i = 0; i < 8; i++) {
-    float angle = (PI / 2.0) - float(i) * (PI / 4.0);
+    float angle = (PI / 2.0) - float(i) * (PI / 4.0) - (PI / 8.0);
     vec3 dotPos = vec3(cos(angle) * u_ringRadius, sin(angle) * u_ringRadius, 0.0);
     float sd = sdSphere(vec3(q.x, q.y, q.z) - dotPos, 0.012);
     d = min(d, sd);
