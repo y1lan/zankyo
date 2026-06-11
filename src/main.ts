@@ -167,6 +167,17 @@ bus.on('ui:toggle-bg', () => {
   if (fractalBg) fractalBg.setBgEnabled(bgEnabled);
 });
 
+// ── FPS Counter ──────────────────────────────────────────────────
+const fpsEl = document.createElement('div');
+Object.assign(fpsEl.style, {
+  position: 'fixed', bottom: '10px', left: '10px', zIndex: '100',
+  color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', fontFamily: 'monospace',
+  pointerEvents: 'none',
+});
+document.body.appendChild(fpsEl);
+let fpsFrames = 0;
+let fpsLastUpdate = performance.now();
+
 // ── Game loop ────────────────────────────────────────────────────
 function loop(): void {
   requestAnimationFrame(loop);
@@ -174,6 +185,14 @@ function loop(): void {
   const now = performance.now();
   const dt = (now - lastTime) / 1000;
   lastTime = now;
+
+  // FPS
+  fpsFrames++;
+  if (now - fpsLastUpdate >= 500) {
+    fpsEl.textContent = `${(fpsFrames / ((now - fpsLastUpdate) / 1000)).toFixed(0)} fps`;
+    fpsFrames = 0;
+    fpsLastUpdate = now;
+  }
 
   if (playing) {
     // Advance camera

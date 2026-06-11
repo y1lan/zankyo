@@ -136,7 +136,7 @@ void main() {
     float coneRadius = max(t * coneSlope, 0.001);
     if (d <= coneRadius) break;
     t += d * ${FRACTAL_CONE_STEP_SCALE.toFixed(2)};
-    if (t > 50.0) break;
+    if (t > 40.0) break;
   }
 
   // Conservative lower bound so the main pass cannot skip near geometry.
@@ -241,12 +241,15 @@ NoteHit noteSDF(vec3 p) {
   result.color = vec3(0.0);
 
   for (int i = 0; i < ${MAX_SHADER_NOTES}; i++) {
-    vec3 notePos = u_notes[i].xyz;
+    vec4 noteData = u_notes[i];
+    if (noteData.w < 0.01 && u_hitEffects[i] < 0.01) continue;
 
-    // Draw sphere only for active notes (w > 0.5)
-    if (u_notes[i].w > 0.5) {
-      float r = NOTE_RADIUS;
-      r += 0.005 * sin(u_time * 8.0 + float(i) * 2.0);
+    vec3 notePos = noteData.xyz;
+    float roughDist = length(p - notePos) - 0.6;
+    if (roughDist > result.dist) continue;
+
+    if (noteData.w > 0.5) {
+      float r = NOTE_RADIUS + 0.005 * sin(u_time * 8.0 + float(i) * 2.0);
       float d = sdSphere(p - notePos, r);
       if (d < result.dist) {
         result.dist = d;
@@ -255,20 +258,18 @@ NoteHit noteSDF(vec3 p) {
       }
     }
 
-    // Hit explosion particles — render even after note disappears
     if (u_hitEffects[i] > 0.01) {
       float ef = u_hitEffects[i];
       vec2 radialDir = normalize(notePos.xy);
       float spread = (1.0 - ef) * 0.5;
-      for (int j = 0; j < 6; j++) {
-        float angle = float(j) * 1.047; // 6 particles evenly spaced
+      for (int j = 0; j < 4; j++) {
+        float angle = float(j) * 1.5708;
         vec2 dir = vec2(
           radialDir.x * cos(angle) - radialDir.y * sin(angle),
           radialDir.x * sin(angle) + radialDir.y * cos(angle)
         );
         vec3 particlePos = notePos + vec3(dir * spread, 0.0);
-        float particleR = 0.015 * ef;
-        float pd = sdSphere(p - particlePos, particleR);
+        float pd = sdSphere(p - particlePos, 0.015 * ef);
         if (pd < result.dist) {
           result.dist = pd;
           result.index = i;
@@ -360,7 +361,7 @@ SceneResult march(vec3 ro, vec3 rd, float startT, out int steps) {
   res.noteColor = vec3(0.0);
   res.noteIndex = -1;
 
-  for (int i = 0; i < 120; i++) {
+  for (int i = 0; i < 80; i++) {
     steps = i;
     vec3 p = ro + rd * t;
     res = sceneSDF(p);
@@ -368,8 +369,8 @@ SceneResult march(vec3 ro, vec3 rd, float startT, out int steps) {
       res.dist = t;
       return res;
     }
-    t += res.dist * 0.8; // understep for Menger precision
-    if (t > 50.0) break;
+    t += res.dist * 0.8;
+    if (t > 40.0) break;
   }
   res.dist = t;
   res.material = -1; // miss
@@ -379,12 +380,12 @@ SceneResult march(vec3 ro, vec3 rd, float startT, out int steps) {
 // ── Normal ──────────────────────────────────────────────────────
 
 vec3 calcNormal(vec3 p) {
-  vec2 e = vec2(0.001, 0.0);
-  float d = sceneSDF(p).dist;
+  vec2 e = vec2(0.002, 0.0);
+  float d = fractalTunnel(p);
   return normalize(vec3(
-    sceneSDF(p + e.xyy).dist - d,
-    sceneSDF(p + e.yxy).dist - d,
-    sceneSDF(p + e.yyx).dist - d
+    fractalTunnel(p + e.xyy) - d,
+    fractalTunnel(p + e.yxy) - d,
+    fractalTunnel(p + e.yyx) - d
   ));
 }
 
@@ -392,12 +393,12 @@ vec3 calcNormal(vec3 p) {
 
 vec3 noteLighting(vec3 p, vec3 n) {
   vec3 light = vec3(0.0);
-  for (int i = 0; i < ${MAX_SHADER_NOTES}; i++) {
+  for (int i = 0; i < ${Math.min(MAX_SHADER_NOTES, 4)}; i++) {
     if (u_notes[i].w < 0.1) continue;
     vec3 notePos = u_notes[i].xyz;
     vec3 toNote = notePos - p;
     float dist = length(toNote);
-    if (dist > 8.0) continue;
+    if (dist > 5.0) continue;
     vec3 dir = toNote / dist;
     float ndl = max(dot(n, dir), 0.0);
     float atten = 1.0 / (1.0 + dist * dist * 1.5);
@@ -490,7 +491,7 @@ void main() {
   }
 
   // AO from steps
-  float ao = 1.0 - float(steps) / 120.0;
+  float ao = 1.0 - float(steps) / 80.0;
   col *= (0.6 + ao * 0.4);
 
   // Transient global flash (subtle)
