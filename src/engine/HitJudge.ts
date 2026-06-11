@@ -93,6 +93,7 @@ export class HitJudge {
       if (Math.abs(dist - ringR) > ringR * RING_TOUCH_TOLERANCE) return false;
 
       const sectorIndex = this._screenToSector(x, y);
+      this.bus.emit('input:key', { sectorIndex });
       this._handle(sectorIndex);
       return true;
     };
@@ -211,11 +212,12 @@ export class HitJudge {
     this.bus.emit('game:miss');
   }
 
-  /** Get current achievement percentage (0-101) */
+  /** Get current achievement percentage (0-101) — monotonically increasing */
   getAchievement(): number {
     if (this.totalNotes === 0) return 0;
-    const maxPossible = this.totalNotes * SCORE_CRITICAL_PERFECT;
-    return (this.score / maxPossible) * ACHIEVEMENT_MAX_PERCENT;
+    // Base = SCORE_PERFECT per note (= 100%). Critical adds bonus above 100%.
+    const basePossible = this.totalNotes * SCORE_PERFECT;
+    return (this.score / basePossible) * 100;
   }
 
   /** Get current rank */

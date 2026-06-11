@@ -16,6 +16,7 @@ import { PauseMenu } from './ui/PauseMenu.js';
 import { HUD } from './ui/HUD.js';
 import { JudgementPopup } from './ui/JudgementPopup.js';
 import { SectorHints } from './ui/SectorHints.js';
+import { RingPulse } from './ui/RingPulse.js';
 
 // ── Rendering ──────────────────────────────────────────────────────
 const sceneSetup = new SceneSetup();
@@ -28,6 +29,7 @@ const pauseMenu = new PauseMenu(bus, controls.fileInput);
 const hud = new HUD();
 const judgement = new JudgementPopup();
 new SectorHints(bus);
+new RingPulse(bus);
 
 // ── Engine ─────────────────────────────────────────────────────
 const spawner = new NoteSpawner();
