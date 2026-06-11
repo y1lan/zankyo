@@ -1,8 +1,9 @@
 import {
   TUNNEL_RADIUS, NOTE_SPAWN_DISTANCE, NOTE_HIT_DISTANCE,
-  NOTE_TRAVEL_TIME, SECTORS, NOTE_COLOR_SINGLE, NOTE_COLOR_SIMULTANEOUS,
+  SECTORS, NOTE_COLOR_SINGLE, NOTE_COLOR_SIMULTANEOUS,
   type NoteType,
 } from './config.js';
+import { getDifficulty } from './difficulty.js';
 
 let _id: number = 0;
 
@@ -15,6 +16,9 @@ export class Note {
   readonly spawnZ: number;
   readonly noteType: NoteType;
   readonly color: [number, number, number];
+  // Captured at spawn so a mid-game difficulty change doesn't warp
+  // in-flight notes — they finish at their original speed.
+  readonly travelTime: number;
   state: NoteState;
   hitTime: number | null;
 
@@ -29,6 +33,7 @@ export class Note {
     this.spawnZ = cameraZ + NOTE_SPAWN_DISTANCE;
     this.noteType = noteType;
     this.color = noteType === 'single' ? NOTE_COLOR_SINGLE : NOTE_COLOR_SIMULTANEOUS;
+    this.travelTime = getDifficulty().noteTravelTime;
     this.state = 'active';
     this.hitTime = null;
 
@@ -40,7 +45,7 @@ export class Note {
   /** Current z-position of the note (constant-speed approach in camera-relative space) */
   currentZ(now: number, cameraZ: number): number {
     const elapsed = (now - this.spawnTime) / 1000;
-    const progress = elapsed / NOTE_TRAVEL_TIME;
+    const progress = elapsed / this.travelTime;
     const initialRelativeDistance = NOTE_SPAWN_DISTANCE - NOTE_HIT_DISTANCE;
     const relativeDistanceToHitZone = initialRelativeDistance * (1 - progress);
     return cameraZ + NOTE_HIT_DISTANCE + relativeDistanceToHitZone;

@@ -6,10 +6,9 @@ import {
   TUNNEL_SPEED,
   SECTORS,
   MAX_SHADER_NOTES,
-  BEAT_SPAWN_CHANCE,
-  SIMULTANEOUS_CHANCE,
   ENABLE_BEAT_FLASH,
 } from './engine/config.js';
+import { getDifficulty } from './engine/difficulty.js';
 import { SceneSetup } from './rendering/SceneSetup.js';
 import { FractalBackground, type NoteShaderData } from './rendering/FractalBackground.js';
 import { Controls } from './ui/Controls.js';
@@ -104,10 +103,10 @@ bus.on('ui:resume', () => {
 
 // Audio → beat → spawn red single or yellow pair (maimai-style)
 audio.onBeat = (_energy, _laneIndex) => {
-  // Reduce note density
-  if (Math.random() > BEAT_SPAWN_CHANCE) return;
+  const diff = getDifficulty();
+  if (Math.random() > diff.spawnChance) return;
 
-  if (Math.random() < SIMULTANEOUS_CHANCE) {
+  if (Math.random() < diff.simultaneousChance) {
     // Yellow simultaneous pair: two different sectors
     const s1 = Math.floor(Math.random() * SECTORS.length);
     let s2 = (s1 + Math.floor(Math.random() * (SECTORS.length - 1)) + 1) % SECTORS.length;

@@ -4,7 +4,6 @@ export const TUNNEL_SPEED: number = 2.0; // units/sec camera flies forward
 // Note flight
 export const NOTE_SPAWN_DISTANCE: number = 50; // how far ahead notes spawn (far away)
 export const NOTE_HIT_DISTANCE: number = 2; // z-distance from camera for hit zone center
-export const NOTE_TRAVEL_TIME: number = 8.0; // seconds from spawn to hit zone
 
 // Hit zone ring size as fraction of the smaller screen dimension (0-1)
 export const HIT_RING_FRACTION: number = 0.8;
@@ -57,10 +56,9 @@ export type NoteType = 'single' | 'simultaneous';
 export const NOTE_COLOR_SINGLE: [number, number, number] = [1.0, 0.2, 0.5];     // pink/red
 export const NOTE_COLOR_SIMULTANEOUS: [number, number, number] = [1.0, 0.85, 0.2]; // yellow
 
-// Beat spawn probability — lower = fewer notes (0-1)
-export const BEAT_SPAWN_CHANCE: number = 0.35;
-// Chance of spawning a simultaneous pair vs single
-export const SIMULTANEOUS_CHANCE: number = 0.3;
+// Spawn density, simultaneous-pair probability, global cooldown, anti-cluster
+// gap, and note travel time all live on the difficulty profile now — see
+// `engine/difficulty.ts`.
 
 // Max visible notes in shader
 export const MAX_SHADER_NOTES: number = 12;
@@ -117,8 +115,8 @@ export const BANDS: readonly Band[] = [
 export const AUDIO_FFT_SIZE: number = 256;
 export const AUDIO_SMOOTHING_TIME_CONSTANT: number = 0.3;
 export const AUDIO_INITIAL_PEAK_DIFF: number = 15;
-export const AUDIO_ONSET_COOLDOWN_MS: number = 180;
-export const AUDIO_SAFETY_TIMEOUT_MS: number = 600;
+export const AUDIO_ONSET_COOLDOWN_MS: number = 260;
+export const AUDIO_SAFETY_TIMEOUT_MS: number = 1200;
 export const AUDIO_THRESHOLD_MIN: number = 8;
 export const AUDIO_THRESHOLD_PEAK_FACTOR: number = 0.35;
 export const AUDIO_SAFETY_THRESHOLD_SCALE: number = 0.5;

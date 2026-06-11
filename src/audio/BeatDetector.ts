@@ -20,6 +20,7 @@ import {
   AUDIO_RANGE_HIGH_START_BIN,
   AUDIO_RANGE_HIGH_END_BIN,
 } from '../engine/config.js';
+import { getDifficulty } from '../engine/difficulty.js';
 
 export interface BandState {
   smoothed: number;
@@ -53,6 +54,7 @@ export class BeatDetector {
   midFreqAvg: number;
   highFreqAvg: number;
   private _skip: boolean;
+  private _lastGlobalOnsetMs: number;
 
   constructor() {
     this.audioContext = null;
@@ -76,6 +78,7 @@ export class BeatDetector {
     this.midFreqAvg = 0;
     this.highFreqAvg = 0;
     this._skip = false;
+    this._lastGlobalOnsetMs = 0;
   }
 
   async loadAudio(file: File): Promise<void> {
@@ -215,10 +218,12 @@ export class BeatDetector {
       if (
         diff > effectiveThreshold &&
         now - state.lastOnsetTime > cooldown &&
+        now - this._lastGlobalOnsetMs > getDifficulty().globalCooldownMs &&
         this.onBeat
       ) {
         state.lastOnsetTime = now;
         state.lastSpawnTime = now;
+        this._lastGlobalOnsetMs = now;
         state.smoothed += diff * AUDIO_ONSET_SMOOTH_BOOST;
         this.onBeat(energy, band.lane);
       }
