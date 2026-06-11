@@ -10,6 +10,7 @@ import {
   FRACTAL_TRANSIENT_DECAY,
   FRACTAL_SHAKE_DECAY,
   FRACTAL_HIT_EFFECT_DECAY,
+  SCENE_MAX_PIXEL_RATIO,
 } from '../engine/config.js';
 
 const VERTEX_SHADER = /* glsl */ `
@@ -399,7 +400,7 @@ export class FractalBackground {
       fragmentShader: FRAGMENT_SHADER,
       uniforms: {
         u_time: { value: 0 },
-        u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+        u_resolution: { value: this._physRes() },
         u_bass: { value: 0 },
         u_treble: { value: 0 },
         u_transient: { value: 0 },
@@ -422,11 +423,16 @@ export class FractalBackground {
     scene.add(this.mesh);
 
     window.addEventListener('resize', () => {
-      this.material.uniforms.u_resolution.value.set(
-        window.innerWidth, window.innerHeight
-      );
+      const res = this._physRes();
+      this.material.uniforms.u_resolution.value.set(res.x, res.y);
       this.material.uniforms.u_ringRadius.value = this._calcRingRadius();
     });
+  }
+
+  /** Physical canvas resolution, accounting for device pixel ratio (capped at SCENE_MAX_PIXEL_RATIO) */
+  private _physRes(): THREE.Vector2 {
+    const pr = Math.min(window.devicePixelRatio, SCENE_MAX_PIXEL_RATIO);
+    return new THREE.Vector2(window.innerWidth * pr, window.innerHeight * pr);
   }
 
   /** Convert screen-fraction ring size to SDF world-space radius */

@@ -133,7 +133,11 @@ export class BeatDetector {
         this.rafId = null;
       }
       this.audioContext.suspend().catch(() => {});
-    } else if (this.audioContext.state === 'suspended') {
+    }
+  }
+
+  resume(): void {
+    if (this.audioContext?.state === 'suspended') {
       this.audioContext.resume().then(() => {
         this.isPlaying = true;
         this.scheduleAnalyze();

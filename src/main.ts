@@ -13,6 +13,7 @@ import {
 import { SceneSetup } from './rendering/SceneSetup.js';
 import { FractalBackground, type NoteShaderData } from './rendering/FractalBackground.js';
 import { Controls } from './ui/Controls.js';
+import { PauseMenu } from './ui/PauseMenu.js';
 import { HUD } from './ui/HUD.js';
 import { JudgementPopup } from './ui/JudgementPopup.js';
 import { SectorHints } from './ui/SectorHints.js';
@@ -24,6 +25,7 @@ let fractalBg: FractalBackground | null = null;
 
 // ── UI ─────────────────────────────────────────────────────────
 const controls = new Controls(bus);
+const pauseMenu = new PauseMenu(bus, controls.fileInput);
 const hud = new HUD();
 const judgement = new JudgementPopup();
 new SectorHints(bus);
@@ -56,6 +58,7 @@ bus.on('ui:load', async ({ file }) => {
     cameraZ = 0;
     lastTime = performance.now();
     playing = true;
+    paused = false;
     if (!fractalBg) {
       fractalBg = new FractalBackground(scene);
       fractalBg.setBgEnabled(bgEnabled);
@@ -70,24 +73,33 @@ bus.on('ui:load', async ({ file }) => {
 
 // UI → stop
 bus.on('ui:stop', () => {
+  pauseMenu.hide();
   audio.stop();
   spawner.clear();
   judge.reset();
   playing = false;
   paused = false;
   controls.setPlaying(false);
-  controls.setPaused(false);
   hud.hideSong();
   hud.updateScore(0, 0);
 });
 
-// UI → pause/resume
+// UI → pause (only effective when playing)
 bus.on('ui:pause', () => {
-  if (!playing && !paused) return;
-  paused = !paused;
-  playing = !paused;
+  if (!playing) return;
+  playing = false;
+  paused = true;
   audio.pause();
-  controls.setPaused(paused);
+  pauseMenu.show(bgEnabled);
+});
+
+// UI → resume (emitted by PauseMenu after countdown)
+bus.on('ui:resume', () => {
+  paused = false;
+  playing = true;
+  lastTime = performance.now();
+  audio.resume();
+  controls.setPlaying(true);
 });
 
 // Audio → beat → spawn red single or yellow pair (maimai-style)
@@ -117,15 +129,14 @@ audio.onFrequencyData = ({ low, mid, high }) => {
 // Audio → ended
 audio.onEnded = () => {
   playing = false;
+  paused = false;
   controls.setPlaying(false);
   hud.hideSong();
 };
 
 // Engine → hit → trigger shader effect and remove note visually
-bus.on('game:hit', ({ note, quality }) => {
-  if (fractalBg) {
-    fractalBg.triggerHitEffect(note.id);
-  }
+bus.on('game:hit', ({ note }) => {
+  if (fractalBg) fractalBg.triggerHitEffect(note.id);
 });
 
 // Engine → score/combo → HUD + achievement
@@ -178,7 +189,7 @@ function loop(): void {
           x: n.wallX,
           y: n.wallY,
           z,
-          state: n.state === 'active' ? 1.0 : 0.0, // hit/miss = invisible immediately
+          state: n.state === 'active' ? 1.0 : 0.0,
           color: [...n.color] as [number, number, number],
         });
       }
