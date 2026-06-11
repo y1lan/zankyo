@@ -143,7 +143,7 @@ export const SCENE_MAX_PIXEL_RATIO: number = 2
 export const SCENE_TONE_MAPPING_EXPOSURE: number = 1.0
 export const BLOOM_STRENGTH: number = 1.2
 export const BLOOM_RADIUS: number = 1
-export const BLOOM_THRESHOLD: number = 1.5
+export const BLOOM_THRESHOLD: number = 0.05
 export const FRACTAL_MAX_PIXELS: number = 2_073_600 // max total pixels for shader render (0 = no cap)
 
 // Fractal shader runtime
@@ -162,7 +162,7 @@ export const LOGO_CELL_SIZE: number = 4 // world units per repeating cell (z and
 export const LOGO_SCALE: number = 0.8 // fraction of cell the logo fills (0-1)
 export const LOGO_OFFSET_Z: number = 0.2 // logo center position within cell along z (0-1)
 export const LOGO_OFFSET_Y: number = 0.1 // logo center position within cell along y (0-1)
-export const LOGO_GLOW_INTENSITY: number = 1.5 // glow brightness multiplier
+export const LOGO_GLOW_INTENSITY: number = 1 // glow brightness multiplier
 
 // Note approach curve: t^IN / (t^IN + (1-t)^OUT), symmetric S when IN=OUT.
 // IN=2, OUT=1.2 → slow start (~20% time, 5% dist), fast middle (~70% time, 88% dist),
