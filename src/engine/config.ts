@@ -24,6 +24,7 @@ export const GOOD_ZONE_RADIUS: number = 3.0; // good
 export const MISS_DISTANCE: number = -2.0; // past hit zone = miss (negative = behind camera)
 export const RING_TOUCH_TOLERANCE: number = 0.25;
 export const HIT_NOTE_HOLD_MS: number = 220; // keep hit note position briefly so FX stays on the correct slot
+export const NOTE_FLY_DURATION_MS: number = 4000; // keep missed note in spawner after it flies past camera
 
 // 8 Sectors (maimai-style octagonal ring)
 export interface Sector {
@@ -152,6 +153,12 @@ export const FRACTAL_CONE_TILE_SIZE: number = 64;
 export const FRACTAL_CONE_MAX_STEPS: number = 64;
 export const FRACTAL_CONE_STEP_SCALE: number = 0.95;
 export const FRACTAL_CONE_BACKOFF_RADIUS_FACTOR: number = 0.75;
+
+// Note approach curve: t^IN / (t^IN + (1-t)^OUT), symmetric S when IN=OUT.
+// IN=2, OUT=1.2 → slow start (~20% time, 5% dist), fast middle (~70% time, 88% dist),
+// short tail (~10% time, 7% dist).
+export const NOTE_CURVE_IN:  number = 2;
+export const NOTE_CURVE_OUT: number = 1.2;
 
 // UI
 export const COMBO_HOT_THRESHOLD: number = 10;

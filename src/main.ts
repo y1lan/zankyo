@@ -9,6 +9,7 @@ import {
   ENABLE_BEAT_FLASH,
 } from './engine/config.js';
 import { getDifficulty } from './engine/difficulty.js';
+import { getFlowSpeed } from './engine/flowSpeed.js';
 import { SceneSetup } from './rendering/SceneSetup.js';
 import { FractalBackground, type NoteShaderData } from './rendering/FractalBackground.js';
 import { Controls } from './ui/Controls.js';
@@ -25,7 +26,7 @@ let fractalBg: FractalBackground | null = null;
 
 // ── UI ─────────────────────────────────────────────────────────
 const controls = new Controls(bus);
-const pauseMenu = new PauseMenu(bus, controls.fileInput);
+const pauseMenu = new PauseMenu(bus);
 const hud = new HUD();
 const judgement = new JudgementPopup();
 new SectorHints(bus);
@@ -198,27 +199,31 @@ function loop(): void {
 
   if (playing) {
     // Advance camera
-    cameraZ += TUNNEL_SPEED * dt;
+    cameraZ += TUNNEL_SPEED * getFlowSpeed() * dt;
     spawner.cameraZ = cameraZ;
 
     // Check for missed notes
     const missed = spawner.update(now);
     for (const _ of missed) judge.miss();
 
-    // Build note shader data
+    // Build note shader data — active notes fill slots first, fly notes use remainder
     if (fractalBg) {
       const shaderNotes: NoteShaderData[] = [];
-      const activeNotes = spawner.notes.slice(0, MAX_SHADER_NOTES);
-      for (const n of activeNotes) {
-        const z = n.currentZ(now, cameraZ);
+      const pushNote = (n: typeof spawner.notes[0]) => {
         shaderNotes.push({
-          id: n.id,
-          x: n.wallX,
-          y: n.wallY,
-          z,
-          state: n.state === 'active' ? 1.0 : 0.0,
+          id: n.id, x: n.wallX, y: n.wallY,
+          z: n.currentZ(now, cameraZ),
+          state: 1.0,
           color: [...n.color] as [number, number, number],
         });
+      };
+      for (const n of spawner.notes) {
+        if (shaderNotes.length >= MAX_SHADER_NOTES) break;
+        if (n.state === 'active') pushNote(n);
+      }
+      for (const n of spawner.notes) {
+        if (shaderNotes.length >= MAX_SHADER_NOTES) break;
+        if (n.state === 'fly') pushNote(n);
       }
       fractalBg.updateNotes(shaderNotes);
       fractalBg.update(bassNorm, trebleNorm, cameraZ, sceneSetup.renderer);

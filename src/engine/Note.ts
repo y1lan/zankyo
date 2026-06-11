@@ -1,13 +1,15 @@
 import {
   TUNNEL_RADIUS, NOTE_SPAWN_DISTANCE, NOTE_HIT_DISTANCE,
   SECTORS, NOTE_COLOR_SINGLE, NOTE_COLOR_SIMULTANEOUS,
+  NOTE_CURVE_IN, NOTE_CURVE_OUT,
   type NoteType,
 } from './config.js';
 import { getDifficulty } from './difficulty.js';
+import { getFlowSpeed } from './flowSpeed.js';
 
 let _id: number = 0;
 
-export type NoteState = 'active' | 'hit' | 'miss';
+export type NoteState = 'active' | 'hit' | 'miss' | 'fly';
 
 export class Note {
   readonly id: number;
@@ -21,6 +23,7 @@ export class Note {
   readonly travelTime: number;
   state: NoteState;
   hitTime: number | null;
+  flyStartTime: number | null;
 
   // Position on tunnel wall (x, y derived from sector angle)
   readonly wallX: number;
@@ -33,28 +36,38 @@ export class Note {
     this.spawnZ = cameraZ + NOTE_SPAWN_DISTANCE;
     this.noteType = noteType;
     this.color = noteType === 'single' ? NOTE_COLOR_SINGLE : NOTE_COLOR_SIMULTANEOUS;
-    this.travelTime = getDifficulty().noteTravelTime;
+    this.travelTime = getDifficulty().noteTravelTime / getFlowSpeed();
     this.state = 'active';
     this.hitTime = null;
+    this.flyStartTime = null;
 
     const sector = SECTORS[sectorIndex];
     this.wallX = Math.cos(sector.angle) * TUNNEL_RADIUS;
     this.wallY = Math.sin(sector.angle) * TUNNEL_RADIUS;
   }
 
-  /** Current z-position of the note (constant-speed approach in camera-relative space) */
+  /** Visual z-position: S-curve approach, then linear fly-past after hit zone */
   currentZ(now: number, cameraZ: number): number {
     const elapsed = (now - this.spawnTime) / 1000;
-    const progress = elapsed / this.travelTime;
-    const initialRelativeDistance = NOTE_SPAWN_DISTANCE - NOTE_HIT_DISTANCE;
-    const relativeDistanceToHitZone = initialRelativeDistance * (1 - progress);
-    return cameraZ + NOTE_HIT_DISTANCE + relativeDistanceToHitZone;
+    const t = elapsed / this.travelTime;
+    const D = NOTE_SPAWN_DISTANCE - NOTE_HIT_DISTANCE;
+
+    if (t <= 1.0) {
+      const tA = Math.pow(t, NOTE_CURVE_IN);
+      const oB = Math.pow(1 - t, NOTE_CURVE_OUT);
+      const easedT = tA / (tA + oB);
+      return cameraZ + NOTE_HIT_DISTANCE + D * (1 - easedT);
+    } else {
+      // Linear continuation: note flies toward and past the camera
+      const flySpeed = D / this.travelTime;
+      return cameraZ + NOTE_HIT_DISTANCE - flySpeed * (elapsed - this.travelTime);
+    }
   }
 
-  /** Distance from the hit zone center (positive = still approaching, negative = passed) */
+  /** Linear distance for hit detection and miss detection (matches visual at t=1) */
   distanceToHitZone(now: number, cameraZ: number): number {
-    const noteZ = this.currentZ(now, cameraZ);
-    const hitZoneZ = cameraZ + NOTE_HIT_DISTANCE;
-    return noteZ - hitZoneZ;
+    const elapsed = (now - this.spawnTime) / 1000;
+    const progress = elapsed / this.travelTime;
+    return (NOTE_SPAWN_DISTANCE - NOTE_HIT_DISTANCE) * (1 - progress);
   }
 }

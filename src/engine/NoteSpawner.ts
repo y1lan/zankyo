@@ -1,6 +1,6 @@
 import { Note } from './Note.js';
 import {
-  HIT_ZONE_RADIUS, MISS_DISTANCE, HIT_NOTE_HOLD_MS,
+  HIT_ZONE_RADIUS, MISS_DISTANCE, HIT_NOTE_HOLD_MS, NOTE_FLY_DURATION_MS,
   NOTE_SPAWN_DISTANCE, type NoteType,
 } from './config.js';
 import { getDifficulty } from './difficulty.js';
@@ -48,21 +48,32 @@ export class NoteSpawner {
     const missed: Note[] = [];
     for (let i = this.notes.length - 1; i >= 0; i--) {
       const n = this.notes[i];
+
       if (n.state === 'hit') {
         if (n.hitTime !== null && now - n.hitTime >= HIT_NOTE_HOLD_MS) {
           this.notes.splice(i, 1);
         }
         continue;
       }
+
+      if (n.state === 'fly') {
+        if (n.flyStartTime !== null && now - n.flyStartTime >= NOTE_FLY_DURATION_MS) {
+          this.notes.splice(i, 1);
+        }
+        continue;
+      }
+
       if (n.state !== 'active') {
         this.notes.splice(i, 1);
         continue;
       }
+
       const dist = n.distanceToHitZone(now, this.cameraZ);
       if (dist < MISS_DISTANCE) {
-        n.state = 'miss';
+        n.state = 'fly';
+        n.flyStartTime = now;
         missed.push(n);
-        this.notes.splice(i, 1);
+        // Note stays in array to fly past camera visually
       }
     }
     return missed;
@@ -89,6 +100,7 @@ export class NoteSpawner {
     for (const note of this.notes) {
       note.spawnTime += ms;
       if (note.hitTime !== null) note.hitTime += ms;
+      if (note.flyStartTime !== null) note.flyStartTime += ms;
     }
   }
 
