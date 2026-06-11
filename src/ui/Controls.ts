@@ -4,10 +4,12 @@ export class Controls {
   public el: HTMLDivElement;
   public stopBtn: HTMLButtonElement;
   public pauseBtn: HTMLButtonElement;
+  public bgToggleBtn: HTMLButtonElement;
   public fileInput: HTMLInputElement;
   public loadLabel: HTMLLabelElement;
   public newLabel: HTMLLabelElement;
   private bus: Bus;
+  private _bgEnabled: boolean = true;
 
   constructor(bus: Bus) {
     this.bus = bus;
@@ -24,6 +26,8 @@ export class Controls {
 
     this.stopBtn = this._btn('⏹', 'stop-btn', { borderColor: 'rgba(255,100,100,0.5)', background: 'rgba(255,50,50,0.1)', fontSize: '1.4rem', padding: '10px 20px' }) as HTMLButtonElement;
     this.stopBtn.style.display = 'none';
+
+    this.bgToggleBtn = this._btn('BG ON', 'bg-toggle-btn', { borderColor: 'rgba(100,255,150,0.4)', background: 'rgba(100,255,150,0.08)', fontSize: '0.8rem', padding: '8px 16px', letterSpacing: '0.15em' }) as HTMLButtonElement;
 
     this.fileInput = document.createElement('input');
     this.fileInput.type = 'file';
@@ -45,6 +49,15 @@ export class Controls {
     });
     this.pauseBtn.addEventListener('click', () => bus.emit('ui:pause'));
     this.stopBtn.addEventListener('click', () => bus.emit('ui:stop'));
+    this.bgToggleBtn.addEventListener('click', () => {
+      this._bgEnabled = !this._bgEnabled;
+      this.bgToggleBtn.textContent = this._bgEnabled ? 'BG ON' : 'BG OFF';
+      Object.assign(this.bgToggleBtn.style, {
+        borderColor: this._bgEnabled ? 'rgba(100,255,150,0.4)' : 'rgba(180,180,180,0.3)',
+        background: this._bgEnabled ? 'rgba(100,255,150,0.08)' : 'rgba(180,180,180,0.05)',
+      });
+      bus.emit('ui:toggle-bg');
+    });
 
     // Space bar for debug pause
     window.addEventListener('keydown', (e: KeyboardEvent) => {

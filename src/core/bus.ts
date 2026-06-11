@@ -4,6 +4,7 @@ export interface BusEvents {
   'ui:load': { file: File };
   'ui:stop': void;
   'ui:pause': void;
+  'ui:toggle-bg': void;
   'game:hit': { note: Note; quality: 'perfect' | 'good' };
   'game:score': { score: number; combo: number };
   'game:judgement': { text: string; color: string };
