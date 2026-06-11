@@ -41,6 +41,7 @@ let cameraZ = 0;
 let playing = false;
 let paused = false;
 let bgEnabled = true;
+let pauseStartTime = 0;
 let lastTime = performance.now();
 let bassNorm = 0;
 let trebleNorm = 0;
@@ -88,12 +89,15 @@ bus.on('ui:pause', () => {
   if (!playing) return;
   playing = false;
   paused = true;
+  pauseStartTime = performance.now();
   audio.pause();
   pauseMenu.show(bgEnabled);
 });
 
 // UI → resume (emitted by PauseMenu after countdown)
 bus.on('ui:resume', () => {
+  // Shift note timestamps so paused wall-clock time is ignored
+  spawner.shiftSpawnTimes(performance.now() - pauseStartTime);
   paused = false;
   playing = true;
   lastTime = performance.now();

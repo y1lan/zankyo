@@ -12,7 +12,7 @@ export type NoteState = 'active' | 'hit' | 'miss';
 export class Note {
   readonly id: number;
   readonly sectorIndex: number;
-  readonly spawnTime: number;
+  spawnTime: number;
   readonly spawnZ: number;
   readonly noteType: NoteType;
   readonly color: [number, number, number];
