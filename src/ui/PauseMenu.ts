@@ -61,6 +61,7 @@ export class PauseMenu {
   private bgBtn: HTMLButtonElement;
   private bus: Bus;
   private _timer: ReturnType<typeof setTimeout> | null = null;
+  private _counting: boolean = false;
   private _bgEnabled: boolean = true;
 
   constructor(bus: Bus, fileInput: HTMLInputElement) {
@@ -135,14 +136,19 @@ export class PauseMenu {
       clearTimeout(this._timer);
       this._timer = null;
     }
+    this._counting = false;
     this.el.classList.remove('pm-visible');
   }
 
+  get isCountingDown(): boolean { return this._counting; }
+
   startResume(): void {
+    if (this._counting) return;
     this._startCountdown();
   }
 
   private _startCountdown(): void {
+    this._counting = true;
     this.buttonsEl.style.display = 'none';
     this.countdownEl.style.display = 'block';
 
