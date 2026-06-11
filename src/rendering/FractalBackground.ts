@@ -261,7 +261,7 @@ NoteHit noteSDF(vec3 p) {
     if (u_hitEffects[i] > 0.01) {
       float ef = u_hitEffects[i];
       vec2 radialDir = normalize(notePos.xy);
-      float spread = (1.0 - ef) * 0.5;
+      float spread = (1.0 - ef) * 0.8;
       for (int j = 0; j < 4; j++) {
         float angle = float(j) * 1.5708;
         vec2 dir = vec2(
@@ -269,7 +269,7 @@ NoteHit noteSDF(vec3 p) {
           radialDir.x * sin(angle) + radialDir.y * cos(angle)
         );
         vec3 particlePos = notePos + vec3(dir * spread, 0.0);
-        float pd = sdSphere(p - particlePos, 0.015 * ef);
+        float pd = sdSphere(p - particlePos, 0.02 * ef * ef);
         if (pd < result.dist) {
           result.dist = pd;
           result.index = i;

@@ -19,6 +19,7 @@ import { HUD } from './ui/HUD.js';
 import { JudgementPopup } from './ui/JudgementPopup.js';
 import { SectorHints } from './ui/SectorHints.js';
 import { RingPulse } from './ui/RingPulse.js';
+import { HitSounds } from './audio/HitSounds.js';
 
 // ── Rendering ──────────────────────────────────────────────────────
 const sceneSetup = new SceneSetup();
@@ -32,6 +33,7 @@ const hud = new HUD();
 const judgement = new JudgementPopup();
 new SectorHints(bus);
 new RingPulse(bus);
+new HitSounds(bus);
 
 // ── Engine ─────────────────────────────────────────────────────
 const spawner = new NoteSpawner();

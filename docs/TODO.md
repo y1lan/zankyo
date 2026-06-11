@@ -48,7 +48,9 @@
 - [x] Perf-only shader pass: avoid expensive normal sampling on ring, use analytic normal for notes
 - [x] Implement conservative cone-marching prepass (10x10 tiles) to seed ray start distance
 - [x] Tune cone-marching prepass aggressively (higher prepass steps, lower backoff, faster coarse stepping)
-- [ ] Add per-sector hit effect on the ring
+- [x] Add per-sector hit effect on the ring (arc pulse)
+- [x] Add hit feedback sounds (tap click + judgement-pitched ping via Web Audio oscillators)
+- [x] Note scatter particles shrink to nothing on hit (ef² radius decay)
 - [ ] Add guidance line from note to ring destination
 - [ ] Notes appear abruptly — could fade in based on distance
 - [ ] (Optional) Better Fractal
