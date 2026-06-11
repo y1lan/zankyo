@@ -10,6 +10,7 @@ const STYLE = `
   opacity: 0; pointer-events: none;
   transition: opacity 0.25s ease;
 }
+#pause-menu-overlay:not(.pm-visible) { backdrop-filter: none; }
 #pause-menu-overlay.pm-visible {
   opacity: 1; pointer-events: auto;
 }

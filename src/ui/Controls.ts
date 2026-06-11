@@ -248,9 +248,9 @@ export class Controls {
     this.difficultyBtn.style.display = playing ? 'none' : 'inline-block';
     this.flowSpeedRow.style.display = playing ? 'none' : 'flex';
     this.autoBtn.style.display = playing ? 'none' : 'inline-block';
-    this._logo.style.display = playing ? 'none' : 'block';
     this.el.style.display = playing ? 'flex' : 'none';
     this.autoIndicator.style.display = (playing && this._autoMode) ? 'inline' : 'none';
+    this._menuBlur.style.display = playing ? 'none' : 'block';
     this._menuBlur.style.opacity = playing ? '0' : '1';
     this._menuBlur.style.pointerEvents = 'none';
   }

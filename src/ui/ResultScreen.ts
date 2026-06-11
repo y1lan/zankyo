@@ -20,6 +20,7 @@ const STYLE = `
   opacity: 0; pointer-events: none;
   transition: opacity 0.35s ease;
 }
+#result-overlay:not(.rs-visible) { backdrop-filter: none; }
 #result-overlay.rs-visible { opacity: 1; pointer-events: auto; }
 
 #result-panel {
