@@ -54,8 +54,7 @@ export const SECTORS: Sector[] = Array.from({ length: 8 }, (_, i) => {
 // Note type (maimai-style: red = single tap, yellow = simultaneous pair)
 export type NoteType = 'single' | 'simultaneous';
 
-export const NOTE_COLOR_SINGLE: [number, number, number] = [1.0, 0.2, 0.5];     // pink/red
-export const NOTE_COLOR_SIMULTANEOUS: [number, number, number] = [1.0, 0.85, 0.2]; // yellow
+// Note colors live on the theme profile now — see `engine/theme.ts`.
 
 // Spawn density, simultaneous-pair probability, global cooldown, anti-cluster
 // gap, and note travel time all live on the difficulty profile now — see

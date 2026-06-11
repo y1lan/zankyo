@@ -11,6 +11,7 @@ export interface BusEvents {
   'game:judgement': { text: string; color: string };
   'game:miss': void;
   'input:key': { sectorIndex: number };
+  'ui:theme': void;
 }
 
 type Handler<T> = T extends void ? () => void : (data: T) => void;

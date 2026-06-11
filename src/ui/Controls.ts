@@ -1,6 +1,7 @@
 import type { Bus } from '../core/bus.js';
 import { getDifficulty, cycleDifficulty } from '../engine/difficulty.js';
 import { getFlowSpeed, adjustFlowSpeed, FLOW_SPEED_STEP } from '../engine/flowSpeed.js';
+import { getTheme, cycleTheme } from '../engine/theme.js';
 
 export class Controls {
   public el: HTMLDivElement;
@@ -8,6 +9,7 @@ export class Controls {
   public fileInput: HTMLInputElement;
   public loadLabel: HTMLLabelElement;
   public difficultyBtn: HTMLButtonElement;
+  public themeBtn: HTMLButtonElement;
   private flowSpeedRow: HTMLDivElement;
   private flowSpeedValEl: HTMLSpanElement;
   private _playing: boolean = false;
@@ -78,12 +80,33 @@ export class Controls {
     });
     document.body.appendChild(this.difficultyBtn);
 
-    // Flow speed control row (below difficulty button)
+    // Theme cycle button (centered, below DIFFICULTY)
+    this.themeBtn = document.createElement('button');
+    this.themeBtn.id = 'theme-btn';
+    Object.assign(this.themeBtn.style, {
+      position: 'fixed', top: '50%', left: '50%',
+      transform: 'translate(-50%, calc(-50% + 105px))',
+      padding: '6px 20px', border: '2px solid',
+      background: 'rgba(0,0,0,0.4)',
+      fontFamily: "'Noto Sans JP', sans-serif", fontSize: '0.72rem',
+      fontWeight: '700', letterSpacing: '0.25em', cursor: 'pointer',
+      backdropFilter: 'blur(10px)', zIndex: '10',
+      transition: 'all 200ms ease-out',
+    });
+    this._applyThemeStyle();
+    this.themeBtn.addEventListener('click', () => {
+      cycleTheme();
+      this._applyThemeStyle();
+      bus.emit('ui:theme');
+    });
+    document.body.appendChild(this.themeBtn);
+
+    // Flow speed control row (below theme button)
     this.flowSpeedRow = document.createElement('div');
     this.flowSpeedRow.id = 'flow-speed-row';
     Object.assign(this.flowSpeedRow.style, {
       position: 'fixed', top: '50%', left: '50%',
-      transform: 'translate(-50%, calc(-50% + 110px))',
+      transform: 'translate(-50%, calc(-50% + 155px))',
       display: 'flex', alignItems: 'center', gap: '8px',
       fontFamily: "'Noto Sans JP', sans-serif",
       fontSize: '0.72rem', fontWeight: '700', letterSpacing: '0.2em',
@@ -143,6 +166,7 @@ export class Controls {
     this._playing = playing;
     this.loadLabel.style.display      = playing ? 'none' : 'inline-block';
     this.difficultyBtn.style.display  = playing ? 'none' : 'inline-block';
+    this.themeBtn.style.display       = playing ? 'none' : 'inline-block';
     this.flowSpeedRow.style.display   = playing ? 'none' : 'flex';
     this.el.style.display             = playing ? 'flex' : 'none';
   }
@@ -154,6 +178,13 @@ export class Controls {
     this.difficultyBtn.textContent = profile.label;
     this.difficultyBtn.style.color = profile.color;
     this.difficultyBtn.style.borderColor = profile.color + '90';
+  }
+
+  private _applyThemeStyle(): void {
+    const theme = getTheme();
+    this.themeBtn.textContent = `THEME ${theme.label}`;
+    this.themeBtn.style.color = theme.accent;
+    this.themeBtn.style.borderColor = theme.accent + '90';
   }
 
   private _updateFlowSpeedVal(): void {

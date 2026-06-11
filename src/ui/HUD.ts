@@ -1,4 +1,10 @@
 import { COMBO_HOT_THRESHOLD } from '../engine/config.js';
+import { getTheme } from '../engine/theme.js';
+
+function hexToRgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.replace('#', ''), 16);
+  return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
+}
 
 export class HUD {
   public el: HTMLDivElement;
@@ -56,10 +62,15 @@ export class HUD {
       this.comboEl.style.opacity = "1";
       this.comboEl.textContent = `${combo}`;
       const hot = combo >= COMBO_HOT_THRESHOLD;
-      this.comboEl.style.color = hot ? "#ff00ff" : "#00ffff";
-      this.comboEl.style.textShadow = hot
-        ? "0 0 30px rgba(255,0,255,0.8),0 0 60px rgba(255,0,200,0.5)"
-        : "0 0 30px rgba(0,255,255,0.8),0 0 60px rgba(0,200,255,0.5)";
+      if (hot) {
+        const c = getTheme().comboHot;
+        const [r, g, b] = hexToRgb(c);
+        this.comboEl.style.color = c;
+        this.comboEl.style.textShadow = `0 0 30px rgba(${r},${g},${b},0.8),0 0 60px rgba(${r},${g},${b},0.5)`;
+      } else {
+        this.comboEl.style.color = "#00ffff";
+        this.comboEl.style.textShadow = "0 0 30px rgba(0,255,255,0.8),0 0 60px rgba(0,200,255,0.5)";
+      }
     } else {
       this.comboEl.style.opacity = "0";
     }

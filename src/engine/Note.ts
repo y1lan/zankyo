@@ -1,11 +1,12 @@
 import {
   TUNNEL_RADIUS, NOTE_SPAWN_DISTANCE, NOTE_HIT_DISTANCE,
-  SECTORS, NOTE_COLOR_SINGLE, NOTE_COLOR_SIMULTANEOUS,
+  SECTORS,
   NOTE_CURVE_IN, NOTE_CURVE_OUT,
   type NoteType,
 } from './config.js';
 import { getDifficulty } from './difficulty.js';
 import { getFlowSpeed } from './flowSpeed.js';
+import { getTheme } from './theme.js';
 
 let _id: number = 0;
 
@@ -35,7 +36,8 @@ export class Note {
     this.spawnTime = performance.now();
     this.spawnZ = cameraZ + NOTE_SPAWN_DISTANCE;
     this.noteType = noteType;
-    this.color = noteType === 'single' ? NOTE_COLOR_SINGLE : NOTE_COLOR_SIMULTANEOUS;
+    const theme = getTheme();
+    this.color = [...(noteType === 'single' ? theme.noteSingle : theme.notePair)] as [number, number, number];
     this.travelTime = getDifficulty().noteTravelTime / getFlowSpeed();
     this.state = 'active';
     this.hitTime = null;
