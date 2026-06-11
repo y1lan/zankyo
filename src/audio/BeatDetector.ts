@@ -55,6 +55,7 @@ export class BeatDetector {
   highFreqAvg: number;
   private _skip: boolean;
   private _lastGlobalOnsetMs: number;
+  private _playStartContextTime: number = 0;
 
   constructor() {
     this.audioContext = null;
@@ -122,9 +123,18 @@ export class BeatDetector {
     if (this.audioContext.state === 'suspended') {
       this.audioContext.resume();
     }
+    this._playStartContextTime = this.audioContext.currentTime;
     this.source.start(0);
     this.isPlaying = true;
     this.scheduleAnalyze();
+  }
+
+  getPlaybackTime(): { current: number; total: number } {
+    const total = this.source?.buffer?.duration ?? 0;
+    const current = this.audioContext
+      ? Math.min(Math.max(0, this.audioContext.currentTime - this._playStartContextTime), total)
+      : 0;
+    return { current, total };
   }
 
   pause(): void {

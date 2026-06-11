@@ -12,7 +12,6 @@ export class Controls {
   private flowSpeedRow: HTMLDivElement;
   private flowSpeedValEl: HTMLSpanElement;
   private autoBtn: HTMLButtonElement = null!;
-  private autoIndicator: HTMLSpanElement = null!;
   private _autoMode: boolean = false;
   private _playing: boolean = false;
   private _menuBlur: HTMLDivElement = null!;
@@ -211,16 +210,6 @@ export class Controls {
     this._applyAutoStyle();
     document.body.appendChild(this.autoBtn);
 
-    // AUTO indicator shown in-game (next to pause button)
-    this.autoIndicator = document.createElement('span');
-    Object.assign(this.autoIndicator.style, {
-      fontSize: '0.6rem', fontFamily: "'Noto Sans JP', sans-serif",
-      fontWeight: '700', letterSpacing: '0.2em',
-      color: '#ffdd44', display: 'none',
-    });
-    this.autoIndicator.textContent = 'AUTO';
-    this.el.appendChild(this.autoIndicator);
-
     this.fileInput.addEventListener('change', (e: Event) => {
       const target = e.target as HTMLInputElement;
       const f = target.files?.[0];
@@ -249,7 +238,6 @@ export class Controls {
     this.flowSpeedRow.style.display = playing ? 'none' : 'flex';
     this.autoBtn.style.display = playing ? 'none' : 'inline-block';
     this.el.style.display = playing ? 'flex' : 'none';
-    this.autoIndicator.style.display = (playing && this._autoMode) ? 'inline' : 'none';
     this._menuBlur.style.display = playing ? 'none' : 'block';
     this._menuBlur.style.opacity = playing ? '0' : '1';
     this._menuBlur.style.pointerEvents = 'none';
@@ -258,10 +246,9 @@ export class Controls {
   setAutoMode(on: boolean): void {
     this._autoMode = on;
     this._applyAutoStyle();
-    if (this._playing) {
-      this.autoIndicator.style.display = on ? 'inline' : 'none';
-    }
   }
+
+  get autoModeOn(): boolean { return this._autoMode; }
 
   clearFile(): void { this.fileInput.value = ''; }
 
@@ -324,3 +311,4 @@ export class Controls {
     }
   }
 }
+

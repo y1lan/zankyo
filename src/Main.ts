@@ -100,6 +100,7 @@ bus.on('ui:stop', () => {
   playing = false;
   paused = false;
   controls.setPlaying(false);
+  infoEl.textContent = '';
   hud.hideSong();
   hud.updateScore(0, 0);
 });
@@ -193,16 +194,25 @@ bus.on('ui:toggle-auto', () => {
   controls.setAutoMode(judge.autoMode);
 });
 
-// ── FPS Counter ──────────────────────────────────────────────────
-const fpsEl = document.createElement('div');
-Object.assign(fpsEl.style, {
+// ── Bottom-left info box (fps / time / auto) ──────────────────────
+const infoBox = document.createElement('div');
+Object.assign(infoBox.style, {
   position: 'fixed', bottom: '10px', left: '10px', zIndex: '100',
   color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', fontFamily: 'monospace',
-  pointerEvents: 'none',
+  pointerEvents: 'none', lineHeight: '1.6',
 });
-document.body.appendChild(fpsEl);
+document.body.appendChild(infoBox);
+const fpsEl  = document.createElement('div');
+const infoEl = document.createElement('div'); // time + auto, updated per-frame
+infoBox.append(fpsEl, infoEl);
 let fpsFrames = 0;
 let fpsLastUpdate = performance.now();
+
+function _fmtTime(s: number): string {
+  const m = Math.floor(s / 60);
+  const ss = Math.floor(s % 60);
+  return `${m}:${ss.toString().padStart(2, '0')}`;
+}
 
 // One initial render so the canvas isn't an uninitialized framebuffer before
 // the first track loads — after that, render() only runs while playing.
@@ -294,6 +304,10 @@ function loop(): void {
   }
   fractalBg.updateNotes(shaderNotes);
   fractalBg.update(bassNorm, trebleNorm, cameraZ, sceneSetup.renderer);
+
+  const { current, total } = audio.getPlaybackTime();
+  const autoTag = controls.autoModeOn ? '  AUTO' : '';
+  infoEl.textContent = `${_fmtTime(current)} / ${_fmtTime(total)}${autoTag}`;
 
   sceneSetup.render();
 }
