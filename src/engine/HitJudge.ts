@@ -239,8 +239,8 @@ export class HitJudge {
    *  weightSum accumulates each note's fractional contribution.
    *  All Critical Perfect → weightSum = beatmapLength → achievement = 101%. */
   getAchievement(): number {
-    if (this.beatmapLength === 0) return 0;
-    return Math.min((this.weightSum / this.beatmapLength) * ACHIEVEMENT_MAX_PERCENT, ACHIEVEMENT_MAX_PERCENT);
+    if (this.totalNotes === 0) return 0;
+    return Math.min((this.weightSum / this.totalNotes) * ACHIEVEMENT_MAX_PERCENT, ACHIEVEMENT_MAX_PERCENT);
   }
 
   /** Get current rank */

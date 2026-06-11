@@ -154,7 +154,11 @@ export function generateBeatmap(audioBuffer: AudioBuffer): Beatmap {
   // Sort by time
   notes.sort((a, b) => a.timeMs - b.timeMs);
 
-  return { notes, totalNotes: notes.length };
+  // Trim notes that would be spawned too late to reach the player before audio ends
+  const audioDurationMs = (totalSamples / sampleRate) * 1000;
+  const filteredNotes = notes.filter(n => n.timeMs <= audioDurationMs);
+
+  return { notes: filteredNotes, totalNotes: filteredNotes.length };
 }
 
 function bandEnergy(magnitudes: Float32Array, startBin: number, endBin: number): number {
