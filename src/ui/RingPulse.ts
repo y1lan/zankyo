@@ -1,5 +1,5 @@
-import type { Bus } from '../core/Bus.js';
-import { SECTORS, HIT_RING_FRACTION } from '../engine/Config.js';
+import type { Bus } from '../core/Bus';
+import { SECTORS, HIT_RING_FRACTION } from '../engine/Config';
 
 const PULSE_DURATION_MS = 250;
 const ARC_GAP_RAD = 0.12; // gap on each side of sector boundary

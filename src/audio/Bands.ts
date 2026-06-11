@@ -1,1 +1,1 @@
-export { BANDS, type Band } from '../engine/Config.js';
+export { BANDS, type Band } from '../engine/Config';

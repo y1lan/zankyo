@@ -1,4 +1,4 @@
-import type { Bus } from '../core/Bus.js';
+import type { Bus } from '../core/Bus';
 
 const STYLE = `
 #pause-menu-overlay {

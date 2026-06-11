@@ -1,14 +1,14 @@
-import { bus } from '../core/Bus.js';
-import type { Bus } from '../core/Bus.js';
-import { NoteSpawner } from './NoteSpawner.js';
-import { Note } from './Note.js';
+import { bus } from '../core/Bus';
+import type { Bus } from '../core/Bus';
+import { NoteSpawner } from './NoteSpawner';
+import { Note } from './Note';
 import {
   CRITICAL_ZONE_RADIUS, PERFECT_ZONE_RADIUS,
   GREAT_ZONE_RADIUS, GOOD_ZONE_RADIUS, HIT_ZONE_RADIUS,
   WEIGHT_CRITICAL_PERFECT, WEIGHT_PERFECT, WEIGHT_GREAT, WEIGHT_GOOD,
   SECTORS, RANKS, HIT_RING_FRACTION, SHADER_FOV, NOTE_HIT_DISTANCE,
   RING_TOUCH_TOLERANCE, ACHIEVEMENT_MAX_PERCENT,
-} from './Config.js';
+} from './Config';
 
 export type Judgement = 'critical' | 'perfect' | 'great' | 'good' | 'miss';
 

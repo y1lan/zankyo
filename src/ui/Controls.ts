@@ -1,7 +1,7 @@
-import type { Bus } from '../core/Bus.js';
-import { getDifficulty, cycleDifficulty } from '../engine/Difficulty.js';
-import { getFlowSpeed, adjustFlowSpeed, FLOW_SPEED_STEP } from '../engine/FlowSpeed.js';
-import { SONG_LIST, type SongEntry } from '../audio/SongList.js';
+import type { Bus } from '../core/Bus';
+import { getDifficulty, cycleDifficulty } from '../engine/Difficulty';
+import { getFlowSpeed, adjustFlowSpeed, FLOW_SPEED_STEP } from '../engine/FlowSpeed';
+import { SONG_LIST, type SongEntry } from '../audio/SongList';
 
 export class Controls {
   public el: HTMLDivElement;

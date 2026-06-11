@@ -12,7 +12,7 @@ import {
   BLOOM_RADIUS,
   BLOOM_THRESHOLD,
   FRACTAL_MAX_PIXELS,
-} from '../engine/Config.js';
+} from '../engine/Config';
 
 export class SceneSetup {
   public scene: THREE.Scene;

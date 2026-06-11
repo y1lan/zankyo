@@ -1,26 +1,26 @@
-import { bus } from './core/Bus.js';
-import { BeatDetector } from './audio/BeatDetector.js';
-import { generateBeatmap, type Beatmap, type BeatmapNote } from './audio/BeatmapGenerator.js';
-import { NoteSpawner } from './engine/NoteSpawner.js';
-import { HitJudge } from './engine/HitJudge.js';
+import { bus } from './core/Bus';
+import { BeatDetector } from './audio/BeatDetector';
+import { generateBeatmap, type Beatmap, type BeatmapNote } from './audio/BeatmapGenerator';
+import { NoteSpawner } from './engine/NoteSpawner';
+import { HitJudge } from './engine/HitJudge';
 import {
   TUNNEL_SPEED,
   MAX_SHADER_NOTES,
   ENABLE_BEAT_FLASH,
   NOTE_SPAWN_DISTANCE,
-} from './engine/Config.js';
-import { getDifficulty } from './engine/Difficulty.js';
-import { getFlowSpeed } from './engine/FlowSpeed.js';
-import { SceneSetup } from './rendering/SceneSetup.js';
-import { FractalBackground, type NoteShaderData } from './rendering/FractalBackground.js';
-import { Controls } from './ui/Controls.js';
-import { PauseMenu } from './ui/PauseMenu.js';
-import { ResultScreen } from './ui/ResultScreen.js';
-import { HUD } from './ui/HUD.js';
-import { JudgementPopup } from './ui/JudgementPopup.js';
-import { SectorHints } from './ui/SectorHints.js';
-import { RingPulse } from './ui/RingPulse.js';
-import { HitSounds } from './audio/HitSounds.js';
+} from './engine/Config';
+import { getDifficulty } from './engine/Difficulty';
+import { getFlowSpeed } from './engine/FlowSpeed';
+import { SceneSetup } from './rendering/SceneSetup';
+import { FractalBackground, type NoteShaderData } from './rendering/FractalBackground';
+import { Controls } from './ui/Controls';
+import { PauseMenu } from './ui/PauseMenu';
+import { ResultScreen } from './ui/ResultScreen';
+import { HUD } from './ui/HUD';
+import { JudgementPopup } from './ui/JudgementPopup';
+import { SectorHints } from './ui/SectorHints';
+import { RingPulse } from './ui/RingPulse';
+import { HitSounds } from './audio/HitSounds';
 
 // ── Rendering ──────────────────────────────────────────────────────
 const sceneSetup = new SceneSetup();

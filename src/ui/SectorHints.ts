@@ -1,6 +1,6 @@
-import type { Bus } from '../core/Bus.js';
-import { SECTORS, HIT_RING_FRACTION } from '../engine/Config.js';
-import { KEY_TO_SECTOR } from '../engine/HitJudge.js';
+import type { Bus } from '../core/Bus';
+import { SECTORS, HIT_RING_FRACTION } from '../engine/Config';
+import { KEY_TO_SECTOR } from '../engine/HitJudge';
 
 // Place hints just outside the ring
 const HINT_RADIUS_FACTOR = 1.18;

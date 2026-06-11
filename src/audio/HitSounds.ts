@@ -1,5 +1,5 @@
-import type { Bus } from '../core/Bus.js'
-import type { Judgement } from '../engine/HitJudge.js'
+import type { Bus } from '../core/Bus'
+import type { Judgement } from '../engine/HitJudge'
 
 /**
  * Synthesized hit feedback sounds using Web Audio API oscillators.

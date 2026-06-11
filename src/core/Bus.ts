@@ -1,4 +1,4 @@
-import type { Note } from '../engine/Note.js';
+import type { Note } from '../engine/Note';
 
 export interface BusEvents {
   'ui:load': { file: File };
