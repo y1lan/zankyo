@@ -45,6 +45,9 @@
 - [x] Keep hit note slot briefly so hit FX stays on the tapped note (no spill to next note)
 - [x] Bind shader hit FX to note IDs (not shader slot index) to prevent unrelated note glow
 - [x] Prevent global touch `preventDefault` unless gameplay touch is consumed (fix mobile NEW TRACK file picker)
+- [x] Perf-only shader pass: avoid expensive normal sampling on ring, use analytic normal for notes
+- [x] Implement conservative cone-marching prepass (10x10 tiles) to seed ray start distance
+- [x] Tune cone-marching prepass aggressively (higher prepass steps, lower backoff, faster coarse stepping)
 - [ ] Add per-sector hit effect on the ring
 - [ ] Add guidance line from note to ring destination
 - [ ] Notes appear abruptly — could fade in based on distance
@@ -53,7 +56,7 @@
   - [ ] Add reflections (secondary ray march)
   - [x] Add SDF lighting (central-difference normals, diffuse + specular)
   - [x] Enable HDR render target (`HalfFloatType`) and ensure tone mapping + existing bloom apply
-  - [ ] Implement cone marching for performance if frame rate is too low
+  - [x] Implement cone marching for performance if frame rate is too low
 - [ ] (Optional) Better beatmap generation
   - [ ] Support multiple difficulty
   - [ ] Proper BPM detection for more musical note timing

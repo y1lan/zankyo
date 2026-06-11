@@ -194,7 +194,7 @@ function loop(): void {
         });
       }
       fractalBg.updateNotes(shaderNotes);
-      fractalBg.update(bassNorm, trebleNorm, cameraZ);
+      fractalBg.update(bassNorm, trebleNorm, cameraZ, sceneSetup.renderer);
     }
   }
 

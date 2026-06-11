@@ -150,6 +150,10 @@ export const FRACTAL_UNIFORM_TIME_SCALE: number = 0.001;
 export const FRACTAL_TRANSIENT_DECAY: number = 0.92;
 export const FRACTAL_SHAKE_DECAY: number = 0.92;
 export const FRACTAL_HIT_EFFECT_DECAY: number = 0.88;
+export const FRACTAL_CONE_TILE_SIZE: number = 10;
+export const FRACTAL_CONE_MAX_STEPS: number = 64;
+export const FRACTAL_CONE_STEP_SCALE: number = 0.95;
+export const FRACTAL_CONE_BACKOFF_RADIUS_FACTOR: number = 0.75;
 
 // UI
 export const COMBO_HOT_THRESHOLD: number = 10;

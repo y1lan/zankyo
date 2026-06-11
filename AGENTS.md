@@ -17,6 +17,9 @@
 - Keep hit notes alive briefly (state=`hit`) so shader hit-effect slot mapping does not jump to the next note.
 - Hit effects must be keyed by `note.id` (not array index) because shader note slots reorder every frame.
 - Touch listeners must only call `preventDefault()` when a gameplay hit is consumed; otherwise mobile UI taps (e.g. file picker labels) break.
+- Prefer perf-only shader optimizations that keep visuals stable (e.g., reduce unnecessary `calcNormal(sceneSDF)` calls).
+- Cone marching uses a low-res prepass buffer (10x10 tiles) and must store a conservative start distance backoff to avoid skipping near geometry.
+- Cone aggressiveness is controlled via config (`FRACTAL_CONE_MAX_STEPS`, `FRACTAL_CONE_STEP_SCALE`, `FRACTAL_CONE_BACKOFF_RADIUS_FACTOR`).
 
 ## Architecture and Data Flow
 

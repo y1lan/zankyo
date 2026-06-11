@@ -11,6 +11,10 @@ import {
   FRACTAL_SHAKE_DECAY,
   FRACTAL_HIT_EFFECT_DECAY,
   SCENE_MAX_PIXEL_RATIO,
+  FRACTAL_CONE_TILE_SIZE,
+  FRACTAL_CONE_MAX_STEPS,
+  FRACTAL_CONE_STEP_SCALE,
+  FRACTAL_CONE_BACKOFF_RADIUS_FACTOR,
 } from '../engine/config.js';
 
 const VERTEX_SHADER = /* glsl */ `
@@ -18,6 +22,127 @@ varying vec2 vUv;
 void main() {
   vUv = uv;
   gl_Position = vec4(position, 1.0);
+}
+`;
+
+const CONE_PREPASS_FRAGMENT_SHADER = /* glsl */ `
+precision highp float;
+
+uniform float u_time;
+uniform vec2 u_resolution;
+uniform float u_cameraZ;
+uniform float u_shake;
+uniform float u_ringRadius;
+uniform vec4 u_notes[${MAX_SHADER_NOTES}];
+
+const float NOTE_RADIUS = ${NOTE_SPHERE_RADIUS.toFixed(2)};
+const float HIT_ZONE_Z_OFFSET = ${NOTE_HIT_DISTANCE.toFixed(1)};
+const float PI = 3.14159265;
+
+float sdSphere(vec3 p, float r) {
+  return length(p) - r;
+}
+
+float sdTorus(vec3 p, vec2 t) {
+  vec2 q = vec2(length(p.xz) - t.x, p.y);
+  return length(q) - t.y;
+}
+
+float fractalTunnel(vec3 p) {
+  float angle = u_time * 0.02;
+  float c = cos(angle), sn = sin(angle);
+  p.xy = mat2(c, -sn, sn, c) * p.xy;
+
+  float d = -1.0;
+  float s = 0.2;
+  const float scale = 3.0;
+
+  for (int i = 0; i < 5; i++) {
+    vec3 a = mod(p * s, 2.0) - 1.0;
+    s *= scale;
+    vec3 r = abs(1.0 - 3.0 * abs(a));
+
+    float da = max(r.x, r.y);
+    float db = max(r.y, r.z);
+    float dc = max(r.z, r.x);
+    float cr = (min(da, min(db, dc)) - 1.0) / s;
+    d = max(d, cr);
+  }
+  return d;
+}
+
+float noteDistance(vec3 p) {
+  float d = 1e10;
+  for (int i = 0; i < ${MAX_SHADER_NOTES}; i++) {
+    if (u_notes[i].w > 0.5) {
+      d = min(d, sdSphere(p - u_notes[i].xyz, NOTE_RADIUS));
+    }
+  }
+  return d;
+}
+
+float ringDistance(vec3 p, float hitZ) {
+  vec3 q = p;
+  q.z -= hitZ;
+  float ring = sdTorus(vec3(q.x, q.z, q.y), vec2(u_ringRadius, 0.003));
+  float dots = 1e10;
+  for (int i = 0; i < 8; i++) {
+    float angle = (PI / 2.0) - float(i) * (PI / 4.0) - (PI / 8.0);
+    vec3 dotPos = vec3(cos(angle) * u_ringRadius, sin(angle) * u_ringRadius, 0.0);
+    dots = min(dots, sdSphere(vec3(q.x, q.y, q.z) - dotPos, 0.012));
+  }
+  return min(ring, dots);
+}
+
+float sceneDistance(vec3 p) {
+  float fractal = fractalTunnel(p);
+  float note = noteDistance(p);
+  float ring = ringDistance(p, u_cameraZ + HIT_ZONE_Z_OFFSET);
+  float carved = fractal;
+  if (note < 1e9) {
+    carved = max(carved, -(note - 0.3));
+  }
+  carved = max(carved, -(ring - 0.15));
+  return min(min(note, ring), carved);
+}
+
+mat3 setCamera(vec3 ro, vec3 ta) {
+  vec3 cw = normalize(ta - ro);
+  vec3 cu = normalize(cross(vec3(0.0, 1.0, 0.0), cw));
+  vec3 cv = cross(cw, cu);
+  return mat3(cu, cv, cw);
+}
+
+void main() {
+  vec2 screenCoord = (gl_FragCoord.xy - 0.5) * ${FRACTAL_CONE_TILE_SIZE.toFixed(1)} + vec2(${(FRACTAL_CONE_TILE_SIZE * 0.5).toFixed(1)});
+  screenCoord = clamp(screenCoord, vec2(0.5), u_resolution - vec2(0.5));
+  vec2 uv = (screenCoord - 0.5 * u_resolution) / u_resolution.y;
+
+  vec3 ro = vec3(0.0, 0.0, u_cameraZ);
+  ro.x += sin(u_time * 13.0) * u_shake * 0.05;
+  ro.y += cos(u_time * 17.0) * u_shake * 0.05;
+  vec3 ta = ro + vec3(0.0, 0.0, 1.0);
+  mat3 cam = setCamera(ro, ta);
+  float fov = ${SHADER_FOV.toFixed(1)};
+  vec3 rd = cam * normalize(vec3(uv * fov, 1.0));
+
+  float tileHalfDiag = 0.5 * sqrt(2.0) * ${FRACTAL_CONE_TILE_SIZE.toFixed(1)} / u_resolution.y;
+  float coneSlope = tileHalfDiag * fov;
+
+  float t = 0.0;
+  for (int i = 0; i < ${FRACTAL_CONE_MAX_STEPS}; i++) {
+    vec3 p = ro + rd * t;
+    float d = sceneDistance(p);
+    float coneRadius = max(t * coneSlope, 0.001);
+    if (d <= coneRadius) break;
+    t += d * ${FRACTAL_CONE_STEP_SCALE.toFixed(2)};
+    if (t > 50.0) break;
+  }
+
+  // Conservative lower bound so the main pass cannot skip near geometry.
+  float finalConeRadius = max(t * coneSlope, 0.001);
+  float startT = max(0.0, t - finalConeRadius * ${FRACTAL_CONE_BACKOFF_RADIUS_FACTOR.toFixed(2)});
+  gl_FragColor = vec4(startT, 0.0, 0.0, 1.0);
 }
 `;
 
@@ -33,6 +158,8 @@ uniform float u_cameraZ;
 uniform float u_shake;
 uniform float u_ringRadius;
 uniform float u_showBg;
+uniform sampler2D u_coneStartTex;
+uniform vec2 u_coneTexResolution;
 
 // Notes: xyz = world position, w = state (1.0=active, 0.5=hit, 0.0=miss/empty)
 uniform vec4 u_notes[${MAX_SHADER_NOTES}];
@@ -224,8 +351,8 @@ SceneResult sceneSDF(vec3 p) {
 
 // ── Ray marching ────────────────────────────────────────────────
 
-SceneResult march(vec3 ro, vec3 rd, out int steps) {
-  float t = 0.0;
+SceneResult march(vec3 ro, vec3 rd, float startT, out int steps) {
+  float t = startT;
   steps = 0;
   SceneResult res;
   res.dist = 1e10;
@@ -308,24 +435,25 @@ void main() {
   float fov = ${SHADER_FOV.toFixed(1)}; // ~70 degrees
   vec3 rd = cam * normalize(vec3(uv * fov, 1.0));
 
+  vec2 coneUv = (floor((gl_FragCoord.xy - 0.5) / ${FRACTAL_CONE_TILE_SIZE.toFixed(1)}) + 0.5) / u_coneTexResolution;
+  float startT = texture2D(u_coneStartTex, coneUv).r;
+
   // March
   int steps;
-  SceneResult hit = march(ro, rd, steps);
+  SceneResult hit = march(ro, rd, startT, steps);
 
   // Shading
   vec3 col = vec3(0.0);
 
   if (hit.material >= 0) {
     vec3 p = ro + rd * hit.dist;
-    vec3 n = calcNormal(p);
-
-    // Base lighting
     vec3 lightDir = normalize(vec3(0.3, 0.8, 0.5));
-    float diff = max(dot(n, lightDir), 0.0);
-    float spec = pow(max(dot(reflect(-lightDir, n), -rd), 0.0), 32.0);
 
     if (hit.material == 0) {
       if (u_showBg > 0.5) {
+        vec3 n = calcNormal(p);
+        float diff = max(dot(n, lightDir), 0.0);
+        float spec = pow(max(dot(reflect(-lightDir, n), -rd), 0.0), 32.0);
         // Fractal: visible monochrome with good ambient
         vec3 baseCol = vec3(0.12, 0.13, 0.15);
         col = baseCol * (diff * 0.8 + 0.25) + vec3(0.25) * spec * 0.3;
@@ -333,6 +461,11 @@ void main() {
         col += noteLighting(p, n) * 0.25;
       }
     } else if (hit.material == 1) {
+      vec3 n = hit.noteIndex >= 0
+        ? normalize(p - u_notes[hit.noteIndex].xyz)
+        : calcNormal(p);
+      float diff = max(dot(n, lightDir), 0.0);
+      float spec = pow(max(dot(reflect(-lightDir, n), -rd), 0.0), 32.0);
       // Note sphere: visible but not blinding
       col = hit.noteColor * (diff * 0.3 + 0.7);
       col += hit.noteColor * 0.4; // mild self-emission
@@ -379,6 +512,11 @@ export interface NoteShaderData {
 export class FractalBackground {
   public mesh: THREE.Mesh;
   private material: THREE.ShaderMaterial;
+  private conePrepassScene: THREE.Scene;
+  private conePrepassCamera: THREE.OrthographicCamera;
+  private conePrepassMaterial: THREE.ShaderMaterial;
+  private conePrepassTarget: THREE.WebGLRenderTarget;
+  private coneTexResolution: THREE.Vector2;
   private transientDecay: number = 0;
   private shakeDecay: number = 0;
   private noteData: NoteShaderData[] = [];
@@ -395,12 +533,48 @@ export class FractalBackground {
       emptyEffects.push(0);
     }
 
+    const initialResolution = this._physRes();
+    const coneWidth = Math.max(1, Math.ceil(initialResolution.x / FRACTAL_CONE_TILE_SIZE));
+    const coneHeight = Math.max(1, Math.ceil(initialResolution.y / FRACTAL_CONE_TILE_SIZE));
+    this.coneTexResolution = new THREE.Vector2(coneWidth, coneHeight);
+    this.conePrepassTarget = new THREE.WebGLRenderTarget(coneWidth, coneHeight, {
+      type: THREE.HalfFloatType,
+      depthBuffer: false,
+      stencilBuffer: false,
+      minFilter: THREE.NearestFilter,
+      magFilter: THREE.NearestFilter,
+    });
+    this.conePrepassTarget.texture.generateMipmaps = false;
+
+    this.conePrepassScene = new THREE.Scene();
+    this.conePrepassCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    this.conePrepassMaterial = new THREE.ShaderMaterial({
+      vertexShader: VERTEX_SHADER,
+      fragmentShader: CONE_PREPASS_FRAGMENT_SHADER,
+      uniforms: {
+        u_time: { value: 0 },
+        u_resolution: { value: initialResolution.clone() },
+        u_cameraZ: { value: 0 },
+        u_shake: { value: 0 },
+        u_ringRadius: { value: this._calcRingRadius() },
+        u_notes: { value: emptyNotes },
+      },
+      depthWrite: false,
+      depthTest: false,
+    });
+    const prepassMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(FRACTAL_FULLSCREEN_PLANE_SIZE, FRACTAL_FULLSCREEN_PLANE_SIZE),
+      this.conePrepassMaterial,
+    );
+    prepassMesh.frustumCulled = false;
+    this.conePrepassScene.add(prepassMesh);
+
     this.material = new THREE.ShaderMaterial({
       vertexShader: VERTEX_SHADER,
       fragmentShader: FRAGMENT_SHADER,
       uniforms: {
         u_time: { value: 0 },
-        u_resolution: { value: this._physRes() },
+        u_resolution: { value: initialResolution },
         u_bass: { value: 0 },
         u_treble: { value: 0 },
         u_transient: { value: 0 },
@@ -408,6 +582,8 @@ export class FractalBackground {
         u_shake: { value: 0 },
         u_ringRadius: { value: this._calcRingRadius() },
         u_showBg: { value: 1.0 },
+        u_coneStartTex: { value: this.conePrepassTarget.texture },
+        u_coneTexResolution: { value: this.coneTexResolution.clone() },
         u_notes: { value: emptyNotes },
         u_noteColors: { value: emptyColors },
         u_hitEffects: { value: emptyEffects },
@@ -425,8 +601,20 @@ export class FractalBackground {
     window.addEventListener('resize', () => {
       const res = this._physRes();
       this.material.uniforms.u_resolution.value.set(res.x, res.y);
+      this.conePrepassMaterial.uniforms.u_resolution.value.set(res.x, res.y);
       this.material.uniforms.u_ringRadius.value = this._calcRingRadius();
+      this.conePrepassMaterial.uniforms.u_ringRadius.value = this._calcRingRadius();
+      this._resizeConeTarget();
     });
+  }
+
+  private _resizeConeTarget(): void {
+    const res = this._physRes();
+    const coneWidth = Math.max(1, Math.ceil(res.x / FRACTAL_CONE_TILE_SIZE));
+    const coneHeight = Math.max(1, Math.ceil(res.y / FRACTAL_CONE_TILE_SIZE));
+    this.coneTexResolution.set(coneWidth, coneHeight);
+    this.conePrepassTarget.setSize(coneWidth, coneHeight);
+    this.material.uniforms.u_coneTexResolution.value.copy(this.coneTexResolution);
   }
 
   /** Physical canvas resolution, accounting for device pixel ratio (capped at SCENE_MAX_PIXEL_RATIO) */
@@ -466,18 +654,21 @@ export class FractalBackground {
     this.noteData = notes;
   }
 
-  update(bass: number, treble: number, cameraZ: number): void {
+  update(bass: number, treble: number, cameraZ: number, renderer: THREE.WebGLRenderer): void {
     const uniforms = this.material.uniforms;
     uniforms.u_time.value = performance.now() * FRACTAL_UNIFORM_TIME_SCALE;
     uniforms.u_bass.value += (bass - uniforms.u_bass.value) * 0.1;
     uniforms.u_treble.value += (treble - uniforms.u_treble.value) * 0.1;
     uniforms.u_cameraZ.value = cameraZ;
+    this.conePrepassMaterial.uniforms.u_time.value = uniforms.u_time.value;
+    this.conePrepassMaterial.uniforms.u_cameraZ.value = cameraZ;
 
     // Decay transient + shake
     this.transientDecay *= FRACTAL_TRANSIENT_DECAY;
     this.shakeDecay *= FRACTAL_SHAKE_DECAY;
     uniforms.u_transient.value = 0.0;
     uniforms.u_shake.value = this.shakeDecay;
+    this.conePrepassMaterial.uniforms.u_shake.value = this.shakeDecay;
 
     // Decay hit effects keyed by note id so slot shuffling can't mis-attach FX.
     for (const [noteId, effect] of this.hitEffectsByNoteId.entries()) {
@@ -506,5 +697,10 @@ export class FractalBackground {
         effectUniforms[i] = 0;
       }
     }
+
+    const previousRenderTarget = renderer.getRenderTarget();
+    renderer.setRenderTarget(this.conePrepassTarget);
+    renderer.render(this.conePrepassScene, this.conePrepassCamera);
+    renderer.setRenderTarget(previousRenderTarget);
   }
 }
