@@ -120,8 +120,7 @@ export class HitJudge {
   private _screenToSector(x: number, y: number): number {
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
-    // Shader camera basis mirrors screen X, so input must do the same.
-    const dx = cx - x;
+    const dx = x - cx;
     const dy = -(y - cy); // flip y (screen y is inverted)
     const angle = Math.atan2(dy, dx);
 

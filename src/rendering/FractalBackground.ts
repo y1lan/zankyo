@@ -284,8 +284,9 @@ vec3 noteLighting(vec3 p, vec3 n) {
 
 mat3 setCamera(vec3 ro, vec3 ta) {
   vec3 cw = normalize(ta - ro);
-  vec3 cu = normalize(cross(cw, vec3(0.0, 1.0, 0.0)));
-  vec3 cv = cross(cu, cw);
+  // Right-handed basis: world +x → screen +x, world +y → screen +y.
+  vec3 cu = normalize(cross(vec3(0.0, 1.0, 0.0), cw));
+  vec3 cv = cross(cw, cu);
   return mat3(cu, cv, cw);
 }
 
