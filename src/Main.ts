@@ -242,12 +242,21 @@ function loop(): void {
       const entry = beatmap.notes[beatmapIndex];
       if (entry.timeMs > elapsedMs) break;
       if (entry.noteType === 'simultaneous') {
-        // Simultaneous notes come in pairs with same timeMs; spawn individually
-        spawner.spawn(entry.sectorIndex, 'simultaneous');
+        // Pairs share the same timeMs — consume both at once via spawnPair
+        // so canSpawn is checked for both sectors before either is committed.
+        const partner = beatmap.notes[beatmapIndex + 1];
+        if (partner && partner.noteType === 'simultaneous' && partner.timeMs === entry.timeMs) {
+          spawner.spawnPair(entry.sectorIndex, partner.sectorIndex);
+          beatmapIndex += 2;
+        } else {
+          // Malformed beatmap entry: fall back to single
+          spawner.spawn(entry.sectorIndex, 'single');
+          beatmapIndex++;
+        }
       } else {
         spawner.spawn(entry.sectorIndex, 'single');
+        beatmapIndex++;
       }
-      beatmapIndex++;
     }
   }
 
