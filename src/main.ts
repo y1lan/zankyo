@@ -184,6 +184,14 @@ document.body.appendChild(fpsEl);
 let fpsFrames = 0;
 let fpsLastUpdate = performance.now();
 
+// One initial render so the canvas isn't an uninitialized framebuffer before
+// the first track loads — after that, render() only runs while playing.
+sceneSetup.render();
+
+// Re-render once when the window is resized while paused/stopped, otherwise
+// the frozen canvas would stretch with the new viewport.
+window.addEventListener('resize', () => { if (!playing) sceneSetup.render(); });
+
 // ── Game loop ────────────────────────────────────────────────────
 function loop(): void {
   requestAnimationFrame(loop);
@@ -191,6 +199,12 @@ function loop(): void {
   const now = performance.now();
   const dt = (now - lastTime) / 1000;
   lastTime = now;
+
+  // Skip all work when paused/stopped — the fractal shader is the heavy bit
+  // and there's nothing for the player to look at that would change anyway.
+  // The canvas keeps the last frame, the DOM overlays (pause menu, HUD,
+  // title screen) still render via the browser.
+  if (!playing) return;
 
   // FPS
   fpsFrames++;
@@ -200,54 +214,52 @@ function loop(): void {
     fpsLastUpdate = now;
   }
 
-  if (playing) {
-    // Advance camera
-    cameraZ += TUNNEL_SPEED * getFlowSpeed() * dt;
-    spawner.cameraZ = cameraZ;
+  // Advance camera
+  cameraZ += TUNNEL_SPEED * getFlowSpeed() * dt;
+  spawner.cameraZ = cameraZ;
 
-    // Spawn notes from pre-generated beatmap
-    if (beatmap) {
-      const diff = getDifficulty();
-      const elapsedMs = now - playStartTime;
-      while (beatmapIndex < beatmap.notes.length) {
-        const entry = beatmap.notes[beatmapIndex];
-        if (entry.timeMs > elapsedMs) break;
-        if (entry.noteType === 'simultaneous') {
-          // Simultaneous notes come in pairs with same timeMs; spawn individually
-          spawner.spawn(entry.sectorIndex, 'simultaneous');
-        } else {
-          spawner.spawn(entry.sectorIndex, 'single');
-        }
-        beatmapIndex++;
+  // Spawn notes from pre-generated beatmap
+  if (beatmap) {
+    const diff = getDifficulty();
+    const elapsedMs = now - playStartTime;
+    while (beatmapIndex < beatmap.notes.length) {
+      const entry = beatmap.notes[beatmapIndex];
+      if (entry.timeMs > elapsedMs) break;
+      if (entry.noteType === 'simultaneous') {
+        // Simultaneous notes come in pairs with same timeMs; spawn individually
+        spawner.spawn(entry.sectorIndex, 'simultaneous');
+      } else {
+        spawner.spawn(entry.sectorIndex, 'single');
       }
+      beatmapIndex++;
     }
+  }
 
-    // Check for missed notes
-    const missed = spawner.update(now);
-    for (const _ of missed) judge.miss();
+  // Check for missed notes
+  const missed = spawner.update(now);
+  for (const _ of missed) judge.miss();
 
-    // Build note shader data — active notes fill slots first, fly notes use remainder
-    if (fractalBg) {
-      const shaderNotes: NoteShaderData[] = [];
-      const pushNote = (n: typeof spawner.notes[0]) => {
-        shaderNotes.push({
-          id: n.id, x: n.wallX, y: n.wallY,
-          z: n.currentZ(now, cameraZ),
-          state: 1.0,
-          color: [...n.color] as [number, number, number],
-        });
-      };
-      for (const n of spawner.notes) {
-        if (shaderNotes.length >= MAX_SHADER_NOTES) break;
-        if (n.state === 'active') pushNote(n);
-      }
-      for (const n of spawner.notes) {
-        if (shaderNotes.length >= MAX_SHADER_NOTES) break;
-        if (n.state === 'fly') pushNote(n);
-      }
-      fractalBg.updateNotes(shaderNotes);
-      fractalBg.update(bassNorm, trebleNorm, cameraZ, sceneSetup.renderer);
+  // Build note shader data — active notes fill slots first, fly notes use remainder
+  if (fractalBg) {
+    const shaderNotes: NoteShaderData[] = [];
+    const pushNote = (n: typeof spawner.notes[0]) => {
+      shaderNotes.push({
+        id: n.id, x: n.wallX, y: n.wallY,
+        z: n.currentZ(now, cameraZ),
+        state: 1.0,
+        color: [...n.color] as [number, number, number],
+      });
+    };
+    for (const n of spawner.notes) {
+      if (shaderNotes.length >= MAX_SHADER_NOTES) break;
+      if (n.state === 'active') pushNote(n);
     }
+    for (const n of spawner.notes) {
+      if (shaderNotes.length >= MAX_SHADER_NOTES) break;
+      if (n.state === 'fly') pushNote(n);
+    }
+    fractalBg.updateNotes(shaderNotes);
+    fractalBg.update(bassNorm, trebleNorm, cameraZ, sceneSetup.renderer);
   }
 
   sceneSetup.render();
