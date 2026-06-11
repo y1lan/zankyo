@@ -18,6 +18,18 @@ declare global {
   }
 }
 
+// KeyboardEvent.code → sector index (sector order: 0=top, clockwise)
+export const KEY_TO_SECTOR: Record<string, number> = {
+  KeyW: 0,      // ↑ top
+  KeyO: 1,      // ↗ top-right
+  KeyL: 2,      // → right
+  Period: 3,    // ↘ bot-right
+  KeyK: 4,      // ↓ bottom
+  KeyZ: 5,      // ↙ bot-left
+  KeyA: 6,      // ← left
+  KeyQ: 7,      // ↖ top-left
+};
+
 export class HitJudge {
   private bus: Bus;
   private noteSpawner: NoteSpawner;
@@ -37,6 +49,19 @@ export class HitJudge {
     this.judgements = { critical: 0, perfect: 0, great: 0, good: 0, miss: 0 };
 
     this._setupTouch();
+    this._setupKeyboard();
+  }
+
+  private _setupKeyboard(): void {
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.repeat) return;
+      if (document.activeElement?.tagName === 'INPUT') return;
+      const sectorIndex = KEY_TO_SECTOR[e.code];
+      if (sectorIndex === undefined) return;
+      e.preventDefault();
+      this.bus.emit('input:key', { sectorIndex });
+      this._handle(sectorIndex);
+    });
   }
 
   /** Get ring radius in screen pixels */
