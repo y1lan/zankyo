@@ -16,7 +16,6 @@ export class Controls {
   private _songSelect: HTMLSelectElement = null!;
   private _loadingBar: HTMLDivElement = null!;
   private _loadingFill: HTMLDivElement = null!;
-  private _logo: HTMLImageElement = null!;
 
   constructor(bus: Bus) {
     // Full-screen blur overlay for main menu
@@ -209,16 +208,6 @@ export class Controls {
         if (e.code === 'BracketRight') { e.preventDefault(); adjustFlowSpeed(+FLOW_SPEED_STEP); this._updateFlowSpeedVal(); }
       }
     });
-
-    // Kong logo (bottom-left corner, visible on menu only)
-    this._logo = document.createElement('img');
-    this._logo.src = '/kong-logo.svg';
-    Object.assign(this._logo.style, {
-      position: 'fixed', bottom: '30px', left: '30px',
-      width: '48px', height: '48px', opacity: '0.6',
-      pointerEvents: 'none', zIndex: '10',
-    });
-    document.body.appendChild(this._logo);
   }
 
   setPlaying(playing: boolean): void {
@@ -228,7 +217,6 @@ export class Controls {
     this._loadingBar.style.display = 'none';
     this.difficultyBtn.style.display = playing ? 'none' : 'inline-block';
     this.flowSpeedRow.style.display = playing ? 'none' : 'flex';
-    this._logo.style.display = playing ? 'none' : 'block';
     this.el.style.display = playing ? 'flex' : 'none';
     this._menuBlur.style.opacity = playing ? '0' : '1';
     this._menuBlur.style.pointerEvents = 'none';
