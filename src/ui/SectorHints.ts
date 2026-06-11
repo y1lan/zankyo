@@ -14,7 +14,7 @@ export class SectorHints {
   constructor(bus: Bus) {
     this.container = document.createElement('div');
     Object.assign(this.container.style, {
-      position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: '5',
+      position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: '2',
     });
     document.body.appendChild(this.container);
 

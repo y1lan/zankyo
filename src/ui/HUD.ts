@@ -11,7 +11,7 @@ export class HUD {
     this.el = document.createElement("div");
     Object.assign(this.el.style, {
       position: "fixed", top: "0", left: "0", width: "100%", height: "100%",
-      pointerEvents: "none", zIndex: "10", fontFamily: "'Noto Sans JP', sans-serif",
+      pointerEvents: "none", zIndex: "2", fontFamily: "'Noto Sans JP', sans-serif",
     });
 
     // Song name (top-left)

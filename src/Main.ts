@@ -25,7 +25,7 @@ import { HitSounds } from './audio/HitSounds';
 // ── Rendering ──────────────────────────────────────────────────────
 const sceneSetup = new SceneSetup();
 const { scene } = sceneSetup;
-let fractalBg: FractalBackground | null = null;
+let fractalBg: FractalBackground = new FractalBackground(scene);
 
 // ── UI ─────────────────────────────────────────────────────────
 const controls = new Controls(bus);
@@ -79,10 +79,6 @@ bus.on('ui:load', async ({ file }) => {
     lastTime = playStartTime;
     playing = true;
     paused = false;
-    if (!fractalBg) {
-      fractalBg = new FractalBackground(scene);
-      fractalBg.setBgEnabled(bgEnabled);
-    }
     lastSongName = file.name.replace(/\.[^/.]+$/, '');
     controls.setPlaying(true);
     hud.showSong(lastSongName);
@@ -134,7 +130,7 @@ bus.on('ui:resume', () => {
 
 // Audio → beat (only used for beat flash now, not spawning)
 audio.onBeat = (_energy, _laneIndex) => {
-  if (ENABLE_BEAT_FLASH && fractalBg) fractalBg.onBeat();
+  if (ENABLE_BEAT_FLASH) fractalBg.onBeat();
 };
 
 // Audio → frequency data
@@ -164,7 +160,7 @@ audio.onEnded = () => {
 
 // Engine → hit → trigger shader effect and remove note visually
 bus.on('game:hit', ({ note }) => {
-  if (fractalBg) fractalBg.triggerHitEffect(note.id);
+  fractalBg.triggerHitEffect(note.id);
 });
 
 // Engine → score/combo → HUD + achievement
@@ -180,13 +176,13 @@ bus.on('game:judgement', ({ text, color }) => {
 
 // Engine → miss → shake
 bus.on('game:miss', () => {
-  if (fractalBg) fractalBg.onMiss();
+  fractalBg.onMiss();
 });
 
 // UI → toggle background rendering
 bus.on('ui:toggle-bg', () => {
   bgEnabled = !bgEnabled;
-  if (fractalBg) fractalBg.setBgEnabled(bgEnabled);
+  fractalBg.setBgEnabled(bgEnabled);
 });
 
 // ── FPS Counter ──────────────────────────────────────────────────
@@ -260,27 +256,25 @@ function loop(): void {
   for (const _ of missed) judge.miss();
 
   // Build note shader data — active notes fill slots first, fly notes use remainder
-  if (fractalBg) {
-    const shaderNotes: NoteShaderData[] = [];
-    const pushNote = (n: typeof spawner.notes[0]) => {
-      shaderNotes.push({
-        id: n.id, x: n.wallX, y: n.wallY,
-        z: n.currentZ(now, cameraZ),
-        state: 1.0,
-        color: [...n.color] as [number, number, number],
-      });
-    };
-    for (const n of spawner.notes) {
-      if (shaderNotes.length >= MAX_SHADER_NOTES) break;
-      if (n.state === 'active') pushNote(n);
-    }
-    for (const n of spawner.notes) {
-      if (shaderNotes.length >= MAX_SHADER_NOTES) break;
-      if (n.state === 'fly') pushNote(n);
-    }
-    fractalBg.updateNotes(shaderNotes);
-    fractalBg.update(bassNorm, trebleNorm, cameraZ, sceneSetup.renderer);
+  const shaderNotes: NoteShaderData[] = [];
+  const pushNote = (n: typeof spawner.notes[0]) => {
+    shaderNotes.push({
+      id: n.id, x: n.wallX, y: n.wallY,
+      z: n.currentZ(now, cameraZ),
+      state: 1.0,
+      color: [...n.color] as [number, number, number],
+    });
+  };
+  for (const n of spawner.notes) {
+    if (shaderNotes.length >= MAX_SHADER_NOTES) break;
+    if (n.state === 'active') pushNote(n);
   }
+  for (const n of spawner.notes) {
+    if (shaderNotes.length >= MAX_SHADER_NOTES) break;
+    if (n.state === 'fly') pushNote(n);
+  }
+  fractalBg.updateNotes(shaderNotes);
+  fractalBg.update(bassNorm, trebleNorm, cameraZ, sceneSetup.renderer);
 
   sceneSetup.render();
 }
