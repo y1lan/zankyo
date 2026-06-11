@@ -1,5 +1,5 @@
 import { Note } from './Note.js';
-import { HIT_ZONE_RADIUS, MISS_DISTANCE, type NoteType } from './config.js';
+import { HIT_ZONE_RADIUS, MISS_DISTANCE, HIT_NOTE_HOLD_MS, type NoteType } from './config.js';
 
 export class NoteSpawner {
   notes: Note[];
@@ -29,6 +29,12 @@ export class NoteSpawner {
     const missed: Note[] = [];
     for (let i = this.notes.length - 1; i >= 0; i--) {
       const n = this.notes[i];
+      if (n.state === 'hit') {
+        if (n.hitTime !== null && now - n.hitTime >= HIT_NOTE_HOLD_MS) {
+          this.notes.splice(i, 1);
+        }
+        continue;
+      }
       if (n.state !== 'active') {
         this.notes.splice(i, 1);
         continue;

@@ -39,6 +39,14 @@
 - [x] HDR pipeline (HalfFloatType + bloom + tone mapping)
 - [x] Remove gsap dependency
 - [x] Centralize gameplay/audio/rendering/UI tunables into `src/engine/config.ts`
+- [x] Fix sector hit mapping so clock-position taps match note direction
+- [x] Fix hit-ring touch radius to match shader projection (viewport-height based)
+- [x] Fix note travel timing against moving camera so hit window aligns with NOTE_TRAVEL_TIME
+- [x] Keep hit note slot briefly so hit FX stays on the tapped note (no spill to next note)
+- [x] Bind shader hit FX to note IDs (not shader slot index) to prevent unrelated note glow
+- [x] Prevent global touch `preventDefault` unless gameplay touch is consumed (fix mobile NEW TRACK file picker)
+- [ ] Add per-sector hit effect on the ring
+- [ ] Add guidance line from note to ring destination
 - [ ] Notes appear abruptly — could fade in based on distance
 - [ ] (Optional) Better Fractal
   - [ ] Add transient detection (dual-envelope method) → `u_transient` uniform

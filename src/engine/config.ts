@@ -24,6 +24,7 @@ export const GREAT_ZONE_RADIUS: number = 2.0; // great
 export const GOOD_ZONE_RADIUS: number = 3.0; // good
 export const MISS_DISTANCE: number = -2.0; // past hit zone = miss (negative = behind camera)
 export const RING_TOUCH_TOLERANCE: number = 0.25;
+export const HIT_NOTE_HOLD_MS: number = 220; // keep hit note position briefly so FX stays on the correct slot
 
 // 8 Sectors (maimai-style octagonal ring)
 export interface Sector {

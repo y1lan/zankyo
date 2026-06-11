@@ -363,12 +363,12 @@ void main() {
 `;
 
 export interface NoteShaderData {
+  id: number;
   x: number;
   y: number;
   z: number;
   state: number; // 1.0=active, 0.5=hit, 0.0=empty
   color: [number, number, number];
-  hitEffect: number; // 0-1 decay timer
 }
 
 export class FractalBackground {
@@ -377,7 +377,7 @@ export class FractalBackground {
   private transientDecay: number = 0;
   private shakeDecay: number = 0;
   private noteData: NoteShaderData[] = [];
-  private hitEffects: number[] = new Array(MAX_SHADER_NOTES).fill(0);
+  private hitEffectsByNoteId: Map<number, number> = new Map();
 
   constructor(scene: THREE.Scene) {
     // Initialize uniform arrays
@@ -443,10 +443,8 @@ export class FractalBackground {
     this.shakeDecay = 0.0;
   }
 
-  triggerHitEffect(noteIndex: number): void {
-    if (noteIndex >= 0 && noteIndex < MAX_SHADER_NOTES) {
-      this.hitEffects[noteIndex] = 1.0;
-    }
+  triggerHitEffect(noteId: number): void {
+    this.hitEffectsByNoteId.set(noteId, 1.0);
   }
 
   updateNotes(notes: NoteShaderData[]): void {
@@ -466,9 +464,14 @@ export class FractalBackground {
     uniforms.u_transient.value = 0.0;
     uniforms.u_shake.value = this.shakeDecay;
 
-    // Decay hit effects
-    for (let i = 0; i < MAX_SHADER_NOTES; i++) {
-      this.hitEffects[i] *= FRACTAL_HIT_EFFECT_DECAY;
+    // Decay hit effects keyed by note id so slot shuffling can't mis-attach FX.
+    for (const [noteId, effect] of this.hitEffectsByNoteId.entries()) {
+      const next = effect * FRACTAL_HIT_EFFECT_DECAY;
+      if (next <= 0.01) {
+        this.hitEffectsByNoteId.delete(noteId);
+      } else {
+        this.hitEffectsByNoteId.set(noteId, next);
+      }
     }
 
     // Upload note data
@@ -481,7 +484,7 @@ export class FractalBackground {
         const nd = this.noteData[i];
         noteUniforms[i].set(nd.x, nd.y, nd.z, nd.state);
         colorUniforms[i].set(nd.color[0], nd.color[1], nd.color[2]);
-        effectUniforms[i] = this.hitEffects[i];
+        effectUniforms[i] = this.hitEffectsByNoteId.get(nd.id) ?? 0;
       } else {
         noteUniforms[i].set(0, 0, 0, 0);
         colorUniforms[i].set(0, 0, 0);

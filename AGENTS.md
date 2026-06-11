@@ -12,6 +12,11 @@
 - Classes are PascalCase; files match their default export class name.
 - Constants are `UPPER_SNAKE_CASE`, exported individually.
 - Tunable constants and runtime flags should live in `src/engine/config.ts` and be imported where used.
+- Touch hit-ring radius must stay projection-aligned with shader math (height-based screen mapping).
+- `Note.currentZ` should be evaluated against live `cameraZ` so NOTE_TRAVEL_TIME remains accurate while camera moves.
+- Keep hit notes alive briefly (state=`hit`) so shader hit-effect slot mapping does not jump to the next note.
+- Hit effects must be keyed by `note.id` (not array index) because shader note slots reorder every frame.
+- Touch listeners must only call `preventDefault()` when a gameplay hit is consumed; otherwise mobile UI taps (e.g. file picker labels) break.
 
 ## Architecture and Data Flow
 
@@ -35,11 +40,11 @@
 
 ## Development
 
-    pnpm install       # Install dependencies (nix devShell provides pnpm)
-    pnpm run dev       # Vite dev server at http://localhost:5173
-    pnpm run build     # Production build to dist/
-    pnpm run preview   # Preview production build
+    npm install        # Install dependencies
+    npm run dev        # Vite dev server at http://localhost:5173
+    npm run build      # Production build to dist/
+    npm run preview    # Preview production build
 
 ### Nix
 
-A flake.nix provides a dev shell with pnpm. Enter with nix develop or use direnv.
+A flake.nix provides a dev shell for the project toolchain. Enter with nix develop or use direnv.

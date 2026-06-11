@@ -119,10 +119,7 @@ audio.onEnded = () => {
 // Engine → hit → trigger shader effect and remove note visually
 bus.on('game:hit', ({ note, quality }) => {
   if (fractalBg) {
-    const idx = spawner.notes.indexOf(note);
-    if (idx >= 0 && idx < MAX_SHADER_NOTES) {
-      fractalBg.triggerHitEffect(idx);
-    }
+    fractalBg.triggerHitEffect(note.id);
   }
 });
 
@@ -164,14 +161,14 @@ function loop(): void {
       const shaderNotes: NoteShaderData[] = [];
       const activeNotes = spawner.notes.slice(0, MAX_SHADER_NOTES);
       for (const n of activeNotes) {
-        const z = n.currentZ(now);
+        const z = n.currentZ(now, cameraZ);
         shaderNotes.push({
+          id: n.id,
           x: n.wallX,
           y: n.wallY,
           z,
           state: n.state === 'active' ? 1.0 : 0.0, // hit/miss = invisible immediately
           color: [...n.color] as [number, number, number],
-          hitEffect: 0,
         });
       }
       fractalBg.updateNotes(shaderNotes);

@@ -6,10 +6,17 @@ import {
   CRITICAL_ZONE_RADIUS, PERFECT_ZONE_RADIUS,
   GREAT_ZONE_RADIUS, GOOD_ZONE_RADIUS, HIT_ZONE_RADIUS,
   SCORE_CRITICAL_PERFECT, SCORE_PERFECT, SCORE_GREAT, SCORE_GOOD,
-  SECTORS, RANKS, HIT_RING_FRACTION, RING_TOUCH_TOLERANCE, ACHIEVEMENT_MAX_PERCENT,
+  SECTORS, RANKS, HIT_RING_FRACTION, SHADER_FOV, NOTE_HIT_DISTANCE,
+  RING_TOUCH_TOLERANCE, ACHIEVEMENT_MAX_PERCENT,
 } from './config.js';
 
 export type Judgement = 'critical' | 'perfect' | 'great' | 'good' | 'miss';
+
+declare global {
+  interface Window {
+    __zankyoHitJudgeInputController?: AbortController;
+  }
+}
 
 export class HitJudge {
   private bus: Bus;
@@ -34,12 +41,20 @@ export class HitJudge {
 
   /** Get ring radius in screen pixels */
   private _ringPixelRadius(): number {
-    const smallSide = Math.min(window.innerWidth, window.innerHeight);
-    return HIT_RING_FRACTION * smallSide * 0.5;
+    // Match shader projection exactly: uv uses resolution.y as the scale basis.
+    const ringWorldRadius = HIT_RING_FRACTION * SHADER_FOV * NOTE_HIT_DISTANCE * 0.5;
+    const worldToPixel = window.innerHeight / (SHADER_FOV * NOTE_HIT_DISTANCE);
+    return ringWorldRadius * worldToPixel;
   }
 
   private _setupTouch(): void {
-    const onTouch = (x: number, y: number) => {
+    window.__zankyoHitJudgeInputController?.abort();
+    const inputController = new AbortController();
+    window.__zankyoHitJudgeInputController = inputController;
+
+    let lastTouchMs = 0;
+
+    const onTouch = (x: number, y: number): boolean => {
       const cx = window.innerWidth / 2;
       const cy = window.innerHeight / 2;
       const dx = x - cx;
@@ -48,48 +63,57 @@ export class HitJudge {
       const ringR = this._ringPixelRadius();
 
       // Only register hits near the ring
-      if (Math.abs(dist - ringR) > ringR * RING_TOUCH_TOLERANCE) return;
+      if (Math.abs(dist - ringR) > ringR * RING_TOUCH_TOLERANCE) return false;
 
       const sectorIndex = this._screenToSector(x, y);
       this._handle(sectorIndex);
+      return true;
     };
 
     window.addEventListener('touchstart', (e: TouchEvent) => {
+      lastTouchMs = performance.now();
+      let consumed = false;
       for (let i = 0; i < e.changedTouches.length; i++) {
         const t = e.changedTouches[i];
-        onTouch(t.clientX, t.clientY);
+        consumed = onTouch(t.clientX, t.clientY) || consumed;
       }
-      e.preventDefault();
-    }, { passive: false });
+      if (consumed) e.preventDefault();
+    }, { passive: false, signal: inputController.signal });
 
     window.addEventListener('mousedown', (e: MouseEvent) => {
+      // Ignore synthetic mouse events that follow touch on hybrid devices.
+      if (performance.now() - lastTouchMs < 500) return;
       if (e.button === 0) {
         onTouch(e.clientX, e.clientY);
       }
-    });
+    }, { signal: inputController.signal });
   }
 
   /** Map screen position to sector index based on angle from screen center */
   private _screenToSector(x: number, y: number): number {
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
-    const dx = x - cx;
+    // Shader camera basis mirrors screen X, so input must do the same.
+    const dx = cx - x;
     const dy = -(y - cy); // flip y (screen y is inverted)
-    // Shift by half a sector (PI/8) to center tap zones on dots
-    const angle = Math.atan2(dy, dx) + Math.PI / 8;
+    const angle = Math.atan2(dy, dx);
 
-    // Find closest sector
-    let bestIdx = 0;
-    let bestDiff = Infinity;
+    let bestIndex = 0;
+    let smallestDelta = Infinity;
     for (let i = 0; i < SECTORS.length; i++) {
-      let diff = Math.abs(angle - SECTORS[i].angle);
-      if (diff > Math.PI) diff = 2 * Math.PI - diff;
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        bestIdx = i;
+      const sectorAngle = SECTORS[i].angle;
+      // Wrap-safe shortest angular distance.
+      const delta = Math.atan2(
+        Math.sin(angle - sectorAngle),
+        Math.cos(angle - sectorAngle),
+      );
+      const absDelta = Math.abs(delta);
+      if (absDelta < smallestDelta) {
+        smallestDelta = absDelta;
+        bestIndex = i;
       }
     }
-    return bestIdx;
+    return bestIndex;
   }
 
   reset(): void {
@@ -140,6 +164,7 @@ export class HitJudge {
     }
 
     note.state = 'hit';
+    note.hitTime = now;
     this.totalNotes++;
     this.judgements[judgement]++;
     this.combo++;
