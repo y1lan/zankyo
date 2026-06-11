@@ -71,11 +71,11 @@ export const MAX_SHADER_NOTES: number = 12
 export const NOTE_SPHERE_RADIUS: number = 0.15
 
 // Scoring weights (fraction of max per note; critical = 1.0 → 101% achievable)
-export const WEIGHT_CRITICAL_PERFECT: number = 1.0 // → 101%
-export const WEIGHT_PERFECT: number = 100 / 101 // → 100%
-export const WEIGHT_GREAT: number = 80 / 101 // → ~80%
-export const WEIGHT_GOOD: number = 50 / 101 // → ~50%
-export const WEIGHT_MISS: number = 0 // → 0%
+export const WEIGHT_CRITICAL_PERFECT: number = 1.0
+export const WEIGHT_PERFECT: number = 100 / 101
+export const WEIGHT_GREAT: number = 95 / 101
+export const WEIGHT_GOOD: number = 80 / 101
+export const WEIGHT_MISS: number = 0
 export const ACHIEVEMENT_MAX_PERCENT: number = 101
 
 // Rank thresholds (percentage of max possible score)
