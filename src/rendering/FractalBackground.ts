@@ -15,6 +15,11 @@ import {
   FRACTAL_CONE_MAX_STEPS,
   FRACTAL_CONE_STEP_SCALE,
   FRACTAL_CONE_BACKOFF_RADIUS_FACTOR,
+  LOGO_CELL_SIZE,
+  LOGO_SCALE,
+  LOGO_OFFSET_Z,
+  LOGO_OFFSET_Y,
+  LOGO_GLOW_INTENSITY,
 } from '../engine/config.js';
 
 const VERTEX_SHADER = /* glsl */ `
@@ -160,6 +165,7 @@ uniform float u_ringRadius;
 uniform float u_showBg;
 uniform sampler2D u_coneStartTex;
 uniform vec2 u_coneTexResolution;
+uniform sampler2D u_logoTex;
 
 // Notes: xyz = world position, w = state (1.0=active, 0.5=hit, 0.0=miss/empty)
 uniform vec4 u_notes[${MAX_SHADER_NOTES}];
@@ -460,6 +466,19 @@ void main() {
         col = baseCol * (diff * 0.8 + 0.25) + vec3(0.25) * spec * 0.3;
         // Subtle note-emitted light on fractal walls
         col += noteLighting(p, n) * 0.25;
+
+        // Logo decal — one big logo per cell, on x-facing walls only
+        if (abs(n.x) > 0.7) {
+          float cellZ = floor(p.z / ${LOGO_CELL_SIZE.toFixed(1)});
+          float localZ = (p.z - cellZ * ${LOGO_CELL_SIZE.toFixed(1)}) / ${LOGO_CELL_SIZE.toFixed(1)};
+          float cellY = floor((p.y + ${(LOGO_CELL_SIZE / 2).toFixed(1)}) / ${LOGO_CELL_SIZE.toFixed(1)});
+          float localY = (p.y + ${(LOGO_CELL_SIZE / 2).toFixed(1)} - cellY * ${LOGO_CELL_SIZE.toFixed(1)}) / ${LOGO_CELL_SIZE.toFixed(1)};
+          vec2 logoUV = (vec2(localZ, localY) - vec2(${LOGO_OFFSET_Z.toFixed(2)}, ${LOGO_OFFSET_Y.toFixed(2)})) / ${LOGO_SCALE.toFixed(2)};
+          if (logoUV.x > 0.0 && logoUV.x < 1.0 && logoUV.y > 0.0 && logoUV.y < 1.0) {
+            float logoAlpha = texture2D(u_logoTex, logoUV).r;
+            col += vec3(0.15, 0.9, 0.05) * logoAlpha * ${LOGO_GLOW_INTENSITY.toFixed(2)};
+          }
+        }
       }
     } else if (hit.material == 1) {
       vec3 n = hit.noteIndex >= 0
@@ -585,6 +604,7 @@ export class FractalBackground {
         u_showBg: { value: 1.0 },
         u_coneStartTex: { value: this.conePrepassTarget.texture },
         u_coneTexResolution: { value: this.coneTexResolution.clone() },
+        u_logoTex: { value: this._createLogoTexture() },
         u_notes: { value: emptyNotes },
         u_noteColors: { value: emptyColors },
         u_hitEffects: { value: emptyEffects },
@@ -632,6 +652,38 @@ export class FractalBackground {
     const fovScale = SHADER_FOV;
     const hitDist = NOTE_HIT_DISTANCE;
     return HIT_RING_FRACTION * fovScale * hitDist * 0.5;
+  }
+
+  /** Render kong-logo.svg to a canvas and return as a THREE.Texture */
+  private _createLogoTexture(): THREE.Texture {
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d')!;
+
+    // Create placeholder (will be replaced once SVG loads)
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, size, size);
+      // Draw SVG centered, filling canvas with padding
+      const padding = 20;
+      const drawSize = size - padding * 2;
+      const aspect = 153 / 137; // SVG viewBox ratio
+      let w = drawSize, h = drawSize;
+      if (aspect > 1) { h = drawSize / aspect; } else { w = drawSize * aspect; }
+      const x = (size - w) / 2;
+      const y = (size - h) / 2;
+      ctx.drawImage(img, x, y, w, h);
+      texture.needsUpdate = true;
+    };
+    img.src = '/kong-logo.svg';
+
+    return texture;
   }
 
   setBgEnabled(enabled: boolean): void {
