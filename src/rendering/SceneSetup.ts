@@ -35,11 +35,9 @@ export class SceneSetup {
     this.renderer.toneMappingExposure = SCENE_TONE_MAPPING_EXPOSURE;
     document.body.appendChild(this.renderer.domElement);
 
-    this.composer = new EffectComposer(this.renderer,
-      new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
-        type: THREE.HalfFloatType,
-      })
-    );
+    // No explicit render target — EffectComposer auto-creates at physical pixel resolution
+    // (innerWidth * pixelRatio), keeping gl_FragCoord consistent with u_resolution.
+    this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
 
     this.bloomPass = new UnrealBloomPass(

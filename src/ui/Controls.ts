@@ -2,64 +2,62 @@ import type { Bus } from '../core/bus.js';
 
 export class Controls {
   public el: HTMLDivElement;
-  public stopBtn: HTMLButtonElement;
   public pauseBtn: HTMLButtonElement;
-  public bgToggleBtn: HTMLButtonElement;
   public fileInput: HTMLInputElement;
   public loadLabel: HTMLLabelElement;
-  public newLabel: HTMLLabelElement;
-  private bus: Bus;
-  private _bgEnabled: boolean = true;
 
   constructor(bus: Bus) {
-    this.bus = bus;
-
+    // Right-bottom container (visible during play)
     this.el = document.createElement('div');
     this.el.id = 'controls-bar';
     Object.assign(this.el.style, {
-      position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)',
-      display: 'flex', gap: '16px', alignItems: 'center', pointerEvents: 'none', zIndex: '10',
+      position: 'fixed', bottom: '40px', right: '40px',
+      display: 'none', zIndex: '10',
     });
 
-    this.pauseBtn = this._btn('⏸', 'pause-btn', { borderColor: 'rgba(255,200,50,0.5)', background: 'rgba(255,200,50,0.1)', fontSize: '1.4rem', padding: '10px 20px' }) as HTMLButtonElement;
-    this.pauseBtn.style.display = 'none';
+    this.pauseBtn = document.createElement('button');
+    this.pauseBtn.id = 'pause-btn';
+    this.pauseBtn.textContent = '⏸';
+    Object.assign(this.pauseBtn.style, {
+      padding: '10px 20px', border: '2px solid rgba(255,200,50,0.5)',
+      background: 'rgba(255,200,50,0.1)', color: '#fff',
+      fontFamily: "'Noto Sans JP', sans-serif", fontSize: '1.4rem',
+      cursor: 'pointer', backdropFilter: 'blur(10px)',
+    });
+    this.pauseBtn.addEventListener('click', () => bus.emit('ui:pause'));
+    this.el.appendChild(this.pauseBtn);
+    document.body.appendChild(this.el);
 
-    this.stopBtn = this._btn('⏹', 'stop-btn', { borderColor: 'rgba(255,100,100,0.5)', background: 'rgba(255,50,50,0.1)', fontSize: '1.4rem', padding: '10px 20px' }) as HTMLButtonElement;
-    this.stopBtn.style.display = 'none';
-
-    this.bgToggleBtn = this._btn('BG ON', 'bg-toggle-btn', { borderColor: 'rgba(100,255,150,0.4)', background: 'rgba(100,255,150,0.08)', fontSize: '0.8rem', padding: '8px 16px', letterSpacing: '0.15em' }) as HTMLButtonElement;
-
+    // Hidden file input
     this.fileInput = document.createElement('input');
     this.fileInput.type = 'file';
     this.fileInput.accept = 'audio/*';
     this.fileInput.id = 'file-input';
     this.fileInput.style.display = 'none';
-    this.el.appendChild(this.fileInput);
+    document.body.appendChild(this.fileInput);
 
-    this.loadLabel = this._btn('LOAD TRACK', 'file-label') as HTMLLabelElement;
-    this.newLabel = this._btn('NEW TRACK', 'new-track-label', { borderColor: 'rgba(100,200,255,0.4)' }) as HTMLLabelElement;
-    this.newLabel.style.display = 'none';
-
-    document.body.appendChild(this.el);
+    // Centered LOAD TRACK label (initial state)
+    this.loadLabel = document.createElement('label');
+    this.loadLabel.htmlFor = 'file-input';
+    this.loadLabel.id = 'file-label';
+    this.loadLabel.textContent = 'LOAD TRACK';
+    Object.assign(this.loadLabel.style, {
+      position: 'fixed', top: '50%', left: '50%',
+      transform: 'translate(-50%, -50%)',
+      padding: '12px 36px', border: '2px solid rgba(255,255,255,0.3)',
+      background: 'rgba(255,255,255,0.05)', color: '#fff',
+      fontFamily: "'Noto Sans JP', sans-serif", fontSize: '0.95rem',
+      fontWeight: '700', letterSpacing: '0.2em', cursor: 'pointer',
+      backdropFilter: 'blur(10px)', zIndex: '10',
+    });
+    document.body.appendChild(this.loadLabel);
 
     this.fileInput.addEventListener('change', (e: Event) => {
       const target = e.target as HTMLInputElement;
       const f = target.files?.[0];
       if (f) bus.emit('ui:load', { file: f });
     });
-    this.pauseBtn.addEventListener('click', () => bus.emit('ui:pause'));
-    this.stopBtn.addEventListener('click', () => bus.emit('ui:stop'));
-    this.bgToggleBtn.addEventListener('click', () => {
-      this._bgEnabled = !this._bgEnabled;
-      this.bgToggleBtn.textContent = this._bgEnabled ? 'BG ON' : 'BG OFF';
-      Object.assign(this.bgToggleBtn.style, {
-        borderColor: this._bgEnabled ? 'rgba(100,255,150,0.4)' : 'rgba(180,180,180,0.3)',
-        background: this._bgEnabled ? 'rgba(100,255,150,0.08)' : 'rgba(180,180,180,0.05)',
-      });
-      bus.emit('ui:toggle-bg');
-    });
 
-    // Space bar for debug pause
     window.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault();
@@ -68,33 +66,9 @@ export class Controls {
     });
   }
 
-  private _btn(text: string, id: string, extras: Partial<CSSStyleDeclaration> = {}): HTMLElement {
-    const isLabel = id === 'file-label' || id === 'new-track-label';
-    const el = document.createElement(isLabel ? 'label' : 'button');
-    if (isLabel) (el as HTMLLabelElement).htmlFor = 'file-input';
-    el.id = id;
-    el.textContent = text;
-    Object.assign(el.style, {
-      padding: '12px 36px', border: '2px solid rgba(255,255,255,0.3)',
-      background: 'rgba(255,255,255,0.05)', color: '#fff',
-      fontFamily: "'Noto Sans JP', sans-serif", fontSize: '0.95rem',
-      fontWeight: '700', letterSpacing: '0.2em', cursor: 'pointer',
-      pointerEvents: 'auto', transition: 'all 0.3s', backdropFilter: 'blur(10px)',
-      ...extras,
-    });
-    this.el.appendChild(el);
-    return el;
-  }
-
   setPlaying(playing: boolean): void {
     this.loadLabel.style.display = playing ? 'none' : 'inline-block';
-    this.newLabel.style.display = playing ? 'inline-block' : 'none';
-    this.stopBtn.style.display = playing ? 'inline-block' : 'none';
-    this.pauseBtn.style.display = playing ? 'inline-block' : 'none';
-  }
-
-  setPaused(paused: boolean): void {
-    this.pauseBtn.textContent = paused ? '▶' : '⏸';
+    this.el.style.display = playing ? 'flex' : 'none';
   }
 
   clearFile(): void { this.fileInput.value = ''; }
