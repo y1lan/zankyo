@@ -35,6 +35,7 @@ export const KEY_TO_SECTOR: Record<string, number> = {
 export class HitJudge {
   private bus: Bus;
   private noteSpawner: NoteSpawner;
+  autoMode: boolean;
   weightSum: number;
   combo: number;
   maxCombo: number;
@@ -46,6 +47,7 @@ export class HitJudge {
   constructor(bus: Bus, noteSpawner: NoteSpawner) {
     this.bus = bus;
     this.noteSpawner = noteSpawner;
+    this.autoMode = false;
     this.weightSum = 0;
     this.combo = 0;
     this.maxCombo = 0;
@@ -149,6 +151,16 @@ export class HitJudge {
       }
     }
     return bestIndex;
+  }
+
+  processAuto(now: number): void {
+    if (!this.autoMode) return;
+    for (const note of this.noteSpawner.notes) {
+      if (note.state !== 'active') continue;
+      if (note.distanceToHitZone(now, this.noteSpawner.cameraZ) <= 0) {
+        this._hit(note, now);
+      }
+    }
   }
 
   reset(): void {

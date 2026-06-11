@@ -6,7 +6,7 @@ const STYLE = `
   display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.55);
   backdrop-filter: blur(6px);
-  z-index: 100;
+  z-index: 10;
   opacity: 0; pointer-events: none;
   transition: opacity 0.25s ease;
 }

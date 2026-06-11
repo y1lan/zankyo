@@ -95,6 +95,8 @@ bus.on('ui:stop', () => {
   audio.stop();
   spawner.clear();
   judge.reset();
+  judge.autoMode = false;
+  controls.setAutoMode(false);
   playing = false;
   paused = false;
   controls.setPlaying(false);
@@ -185,6 +187,12 @@ bus.on('ui:toggle-bg', () => {
   fractalBg.setBgEnabled(bgEnabled);
 });
 
+// UI → toggle auto mode
+bus.on('ui:toggle-auto', () => {
+  judge.autoMode = !judge.autoMode;
+  controls.setAutoMode(judge.autoMode);
+});
+
 // ── FPS Counter ──────────────────────────────────────────────────
 const fpsEl = document.createElement('div');
 Object.assign(fpsEl.style, {
@@ -263,6 +271,8 @@ function loop(): void {
   // Check for missed notes
   const missed = spawner.update(now);
   for (const _ of missed) judge.miss();
+
+  judge.processAuto(now);
 
   // Build note shader data — active notes fill slots first, fly notes use remainder
   const shaderNotes: NoteShaderData[] = [];

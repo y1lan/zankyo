@@ -11,6 +11,9 @@ export class Controls {
   public difficultyBtn: HTMLButtonElement;
   private flowSpeedRow: HTMLDivElement;
   private flowSpeedValEl: HTMLSpanElement;
+  private autoBtn: HTMLButtonElement = null!;
+  private autoIndicator: HTMLSpanElement = null!;
+  private _autoMode: boolean = false;
   private _playing: boolean = false;
   private _menuBlur: HTMLDivElement = null!;
   private _songSelect: HTMLSelectElement = null!;
@@ -191,6 +194,33 @@ export class Controls {
     document.body.appendChild(this.flowSpeedRow);
     this._updateFlowSpeedVal();
 
+    // AUTO toggle button (below flow speed)
+    this.autoBtn = document.createElement('button');
+    this.autoBtn.id = 'auto-btn';
+    Object.assign(this.autoBtn.style, {
+      position: 'fixed', top: '50%', left: '50%',
+      transform: 'translate(-50%, calc(-50% + 160px))',
+      padding: '4px 18px', border: '1px solid rgba(255,255,255,0.15)',
+      background: 'rgba(0,0,0,0.4)', color: 'rgba(255,255,255,0.4)',
+      fontFamily: "'Noto Sans JP', sans-serif", fontSize: '0.65rem',
+      fontWeight: '700', letterSpacing: '0.25em', cursor: 'pointer',
+      backdropFilter: 'blur(8px)', zIndex: '10',
+      transition: 'all 200ms ease-out',
+    });
+    this.autoBtn.addEventListener('click', () => bus.emit('ui:toggle-auto'));
+    this._applyAutoStyle();
+    document.body.appendChild(this.autoBtn);
+
+    // AUTO indicator shown in-game (next to pause button)
+    this.autoIndicator = document.createElement('span');
+    Object.assign(this.autoIndicator.style, {
+      fontSize: '0.6rem', fontFamily: "'Noto Sans JP', sans-serif",
+      fontWeight: '700', letterSpacing: '0.2em',
+      color: '#ffdd44', display: 'none',
+    });
+    this.autoIndicator.textContent = 'AUTO';
+    this.el.appendChild(this.autoIndicator);
+
     this.fileInput.addEventListener('change', (e: Event) => {
       const target = e.target as HTMLInputElement;
       const f = target.files?.[0];
@@ -217,12 +247,35 @@ export class Controls {
     this._loadingBar.style.display = 'none';
     this.difficultyBtn.style.display = playing ? 'none' : 'inline-block';
     this.flowSpeedRow.style.display = playing ? 'none' : 'flex';
+    this.autoBtn.style.display = playing ? 'none' : 'inline-block';
+    this._logo.style.display = playing ? 'none' : 'block';
     this.el.style.display = playing ? 'flex' : 'none';
+    this.autoIndicator.style.display = (playing && this._autoMode) ? 'inline' : 'none';
     this._menuBlur.style.opacity = playing ? '0' : '1';
     this._menuBlur.style.pointerEvents = 'none';
   }
 
+  setAutoMode(on: boolean): void {
+    this._autoMode = on;
+    this._applyAutoStyle();
+    if (this._playing) {
+      this.autoIndicator.style.display = on ? 'inline' : 'none';
+    }
+  }
+
   clearFile(): void { this.fileInput.value = ''; }
+
+  private _applyAutoStyle(): void {
+    if (this._autoMode) {
+      this.autoBtn.textContent = 'AUTO ●';
+      this.autoBtn.style.color = '#ffdd44';
+      this.autoBtn.style.borderColor = '#ffdd4490';
+    } else {
+      this.autoBtn.textContent = 'AUTO';
+      this.autoBtn.style.color = 'rgba(255,255,255,0.4)';
+      this.autoBtn.style.borderColor = 'rgba(255,255,255,0.15)';
+    }
+  }
 
   private _applyDifficultyStyle(): void {
     const profile = getDifficulty();

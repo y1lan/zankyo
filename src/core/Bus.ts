@@ -6,6 +6,7 @@ export interface BusEvents {
   'ui:pause': void;
   'ui:resume': void;
   'ui:toggle-bg': void;
+  'ui:toggle-auto': void;
   'game:hit': { note: Note; quality: 'perfect' | 'good' };
   'game:score': { score: number; combo: number };
   'game:judgement': { text: string; color: string };
