@@ -1,5 +1,9 @@
 import { Note } from './Note.js';
-import { HIT_ZONE_RADIUS, MISS_DISTANCE, HIT_NOTE_HOLD_MS, type NoteType } from './config.js';
+import {
+  HIT_ZONE_RADIUS, MISS_DISTANCE, HIT_NOTE_HOLD_MS,
+  NOTE_SPAWN_DISTANCE, type NoteType,
+} from './config.js';
+import { getDifficulty } from './difficulty.js';
 
 export class NoteSpawner {
   notes: Note[];
@@ -10,14 +14,29 @@ export class NoteSpawner {
     this.cameraZ = 0;
   }
 
-  spawn(sectorIndex: number, noteType: NoteType = 'single'): Note {
+  /** True if a new note in this sector wouldn't pile onto an existing one. */
+  canSpawn(sectorIndex: number): boolean {
+    const spawnZ = this.cameraZ + NOTE_SPAWN_DISTANCE;
+    const now = performance.now();
+    const minGap = getDifficulty().minSameSectorZGap;
+    for (const n of this.notes) {
+      if (n.state !== 'active' || n.sectorIndex !== sectorIndex) continue;
+      if (spawnZ - n.currentZ(now, this.cameraZ) < minGap) return false;
+    }
+    return true;
+  }
+
+  spawn(sectorIndex: number, noteType: NoteType = 'single'): Note | null {
+    if (!this.canSpawn(sectorIndex)) return null;
     const note = new Note(sectorIndex, this.cameraZ, noteType);
     this.notes.push(note);
     return note;
   }
 
-  /** Spawn a simultaneous pair in two different sectors */
-  spawnPair(sector1: number, sector2: number): [Note, Note] {
+  /** Spawn a simultaneous pair in two different sectors. Skipped entirely
+   *  if either sector would cluster — pairs are all-or-nothing. */
+  spawnPair(sector1: number, sector2: number): [Note, Note] | null {
+    if (!this.canSpawn(sector1) || !this.canSpawn(sector2)) return null;
     const a = new Note(sector1, this.cameraZ, 'simultaneous');
     const b = new Note(sector2, this.cameraZ, 'simultaneous');
     this.notes.push(a, b);
