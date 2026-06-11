@@ -1,6 +1,7 @@
 import type { Bus } from '../core/bus.js';
 import { getDifficulty, cycleDifficulty } from '../engine/difficulty.js';
 import { getFlowSpeed, adjustFlowSpeed, FLOW_SPEED_STEP } from '../engine/flowSpeed.js';
+import { SONG_LIST, type SongEntry } from '../audio/songList.js';
 
 export class Controls {
   public el: HTMLDivElement;
@@ -12,6 +13,9 @@ export class Controls {
   private flowSpeedValEl: HTMLSpanElement;
   private _playing: boolean = false;
   private _menuBlur: HTMLDivElement = null!;
+  private _songSelect: HTMLSelectElement = null!;
+  private _loadingBar: HTMLDivElement = null!;
+  private _loadingFill: HTMLDivElement = null!;
 
   constructor(bus: Bus) {
     // Full-screen blur overlay for main menu
@@ -59,7 +63,7 @@ export class Controls {
     this.loadLabel = document.createElement('label');
     this.loadLabel.htmlFor = 'file-input';
     this.loadLabel.id = 'file-label';
-    this.loadLabel.textContent = 'LOAD TRACK';
+    this.loadLabel.textContent = 'PLAY MY OWN SONG';
     Object.assign(this.loadLabel.style, {
       position: 'fixed', top: '50%', left: '50%',
       transform: 'translate(-50%, -50%)',
@@ -70,6 +74,60 @@ export class Controls {
       backdropFilter: 'blur(10px)', zIndex: '10',
     });
     document.body.appendChild(this.loadLabel);
+
+    // Song selector dropdown (above LOAD TRACK)
+    this._songSelect = document.createElement('select');
+    this._songSelect.id = 'song-select';
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = '';
+    defaultOpt.textContent = 'SONG LIST';
+    defaultOpt.disabled = true;
+    defaultOpt.selected = true;
+    this._songSelect.appendChild(defaultOpt);
+    for (const song of SONG_LIST) {
+      const opt = document.createElement('option');
+      opt.value = song.id;
+      opt.textContent = song.title;
+      this._songSelect.appendChild(opt);
+    }
+    Object.assign(this._songSelect.style, {
+      position: 'fixed', top: '50%', left: '50%',
+      transform: 'translate(-50%, calc(-50% - 60px))',
+      padding: '12px 36px', border: '2px solid rgba(255,255,255,0.3)',
+      background: 'rgba(255,255,255,0.05)', color: '#fff',
+      fontFamily: "'Noto Sans JP', sans-serif", fontSize: '0.95rem',
+      fontWeight: '700', letterSpacing: '0.2em', cursor: 'pointer',
+      backdropFilter: 'blur(10px)', zIndex: '10',
+      appearance: 'none', textAlign: 'center', boxSizing: 'border-box',
+      width: '12em',
+    });
+    document.body.appendChild(this._songSelect);
+
+    // Loading bar (hidden by default)
+    this._loadingBar = document.createElement('div');
+    Object.assign(this._loadingBar.style, {
+      position: 'fixed', top: '50%', left: '50%',
+      transform: 'translate(-50%, calc(-50% - 20px))',
+      width: '200px', height: '4px',
+      background: 'rgba(255,255,255,0.1)',
+      borderRadius: '2px', overflow: 'hidden',
+      zIndex: '10', display: 'none',
+    });
+    this._loadingFill = document.createElement('div');
+    Object.assign(this._loadingFill.style, {
+      width: '0%', height: '100%',
+      background: 'rgba(100,220,255,0.8)',
+      borderRadius: '2px',
+      transition: 'width 0.1s linear',
+    });
+    this._loadingBar.appendChild(this._loadingFill);
+    document.body.appendChild(this._loadingBar);
+
+    this._songSelect.addEventListener('change', () => {
+      const songId = this._songSelect.value;
+      const song = SONG_LIST.find(s => s.id === songId);
+      if (song) this._loadSong(song, bus);
+    });
 
     // Difficulty cycle button (centered, just below LOAD TRACK)
     this.difficultyBtn = document.createElement('button');
@@ -107,7 +165,7 @@ export class Controls {
     speedLabel.textContent = 'SPEED';
 
     const speedDown = document.createElement('button');
-    const speedUp   = document.createElement('button');
+    const speedUp = document.createElement('button');
     for (const btn of [speedDown, speedUp]) {
       Object.assign(btn.style, {
         padding: '3px 10px',
@@ -127,7 +185,7 @@ export class Controls {
     });
 
     speedDown.addEventListener('click', () => { adjustFlowSpeed(-FLOW_SPEED_STEP); this._updateFlowSpeedVal(); });
-    speedUp.addEventListener('click',   () => { adjustFlowSpeed(+FLOW_SPEED_STEP); this._updateFlowSpeedVal(); });
+    speedUp.addEventListener('click', () => { adjustFlowSpeed(+FLOW_SPEED_STEP); this._updateFlowSpeedVal(); });
 
     this.flowSpeedRow.append(speedDown, speedLabel, this.flowSpeedValEl, speedUp);
     document.body.appendChild(this.flowSpeedRow);
@@ -146,7 +204,7 @@ export class Controls {
         return;
       }
       if (!this._playing) {
-        if (e.code === 'BracketLeft')  { e.preventDefault(); adjustFlowSpeed(-FLOW_SPEED_STEP); this._updateFlowSpeedVal(); }
+        if (e.code === 'BracketLeft') { e.preventDefault(); adjustFlowSpeed(-FLOW_SPEED_STEP); this._updateFlowSpeedVal(); }
         if (e.code === 'BracketRight') { e.preventDefault(); adjustFlowSpeed(+FLOW_SPEED_STEP); this._updateFlowSpeedVal(); }
       }
     });
@@ -154,11 +212,13 @@ export class Controls {
 
   setPlaying(playing: boolean): void {
     this._playing = playing;
-    this.loadLabel.style.display      = playing ? 'none' : 'inline-block';
-    this.difficultyBtn.style.display  = playing ? 'none' : 'inline-block';
-    this.flowSpeedRow.style.display   = playing ? 'none' : 'flex';
-    this.el.style.display             = playing ? 'flex' : 'none';
-    this._menuBlur.style.opacity      = playing ? '0' : '1';
+    this.loadLabel.style.display = playing ? 'none' : 'inline-block';
+    this._songSelect.style.display = playing ? 'none' : 'block';
+    this._loadingBar.style.display = 'none';
+    this.difficultyBtn.style.display = playing ? 'none' : 'inline-block';
+    this.flowSpeedRow.style.display = playing ? 'none' : 'flex';
+    this.el.style.display = playing ? 'flex' : 'none';
+    this._menuBlur.style.opacity = playing ? '0' : '1';
     this._menuBlur.style.pointerEvents = 'none';
   }
 
@@ -173,5 +233,41 @@ export class Controls {
 
   private _updateFlowSpeedVal(): void {
     this.flowSpeedValEl.textContent = getFlowSpeed().toFixed(1) + '×';
+  }
+
+  private async _loadSong(song: SongEntry, bus: Bus): Promise<void> {
+    this._loadingBar.style.display = 'block';
+    this._loadingFill.style.width = '0%';
+    this._songSelect.disabled = true;
+
+    try {
+      const response = await fetch(song.file);
+      if (!response.ok) throw new Error(`Failed to fetch ${song.file}`);
+
+      const contentLength = Number(response.headers.get('content-length') || 0);
+      const reader = response.body!.getReader();
+      const chunks: Uint8Array[] = [];
+      let received = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        received += value.length;
+        if (contentLength > 0) {
+          this._loadingFill.style.width = `${(received / contentLength * 100).toFixed(0)}%`;
+        }
+      }
+
+      const blob = new Blob(chunks);
+      const file = new File([blob], song.title, { type: blob.type || 'audio/flac' });
+      bus.emit('ui:load', { file });
+    } catch (err) {
+      console.error('Song load failed:', err);
+    } finally {
+      this._loadingBar.style.display = 'none';
+      this._songSelect.disabled = false;
+      this._songSelect.selectedIndex = 0;
+    }
   }
 }
