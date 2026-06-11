@@ -218,7 +218,7 @@ export class HitJudge {
     this.judgements.miss++;
     this.combo = 0;
     this.bus.emit('game:score', { score: this.getAchievement(), combo: 0 });
-    this.bus.emit('game:judgement', { text: 'MISS', color: '#ff3333' });
+    this.bus.emit('game:judgement', { text: 'MISS', color: '#888888' });
     this.bus.emit('game:miss');
   }
 

@@ -11,8 +11,21 @@ export class Controls {
   private flowSpeedRow: HTMLDivElement;
   private flowSpeedValEl: HTMLSpanElement;
   private _playing: boolean = false;
+  private _menuBlur: HTMLDivElement = null!;
 
   constructor(bus: Bus) {
+    // Full-screen blur overlay for main menu
+    const menuBlur = document.createElement('div');
+    menuBlur.id = 'menu-blur';
+    Object.assign(menuBlur.style, {
+      position: 'fixed', inset: '0', zIndex: '3',
+      backdropFilter: 'blur(12px)',
+      background: 'rgba(0, 0, 0, 0.3)',
+      transition: 'opacity 0.4s ease-out',
+      pointerEvents: 'none',
+    });
+    document.body.appendChild(menuBlur);
+    this._menuBlur = menuBlur;
     // Right-bottom container (visible during play)
     this.el = document.createElement('div');
     this.el.id = 'controls-bar';
@@ -145,6 +158,8 @@ export class Controls {
     this.difficultyBtn.style.display  = playing ? 'none' : 'inline-block';
     this.flowSpeedRow.style.display   = playing ? 'none' : 'flex';
     this.el.style.display             = playing ? 'flex' : 'none';
+    this._menuBlur.style.opacity      = playing ? '0' : '1';
+    this._menuBlur.style.pointerEvents = 'none';
   }
 
   clearFile(): void { this.fileInput.value = ''; }

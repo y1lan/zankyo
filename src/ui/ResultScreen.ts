@@ -117,7 +117,7 @@ const JUDGE_CONFIG = [
   { key: 'perfect',  label: 'PERFECT',           color: '#ffaa44' },
   { key: 'great',    label: 'GREAT',              color: '#ff77cc' },
   { key: 'good',     label: 'GOOD',               color: '#88ff88' },
-  { key: 'miss',     label: 'MISS',               color: '#ff5555' },
+  { key: 'miss',     label: 'MISS',               color: '#888888' },
 ] as const;
 
 export class ResultScreen {
