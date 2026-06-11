@@ -5,7 +5,7 @@ import { Note } from './Note.js';
 import {
   CRITICAL_ZONE_RADIUS, PERFECT_ZONE_RADIUS,
   GREAT_ZONE_RADIUS, GOOD_ZONE_RADIUS, HIT_ZONE_RADIUS,
-  SCORE_CRITICAL_PERFECT, SCORE_PERFECT, SCORE_GREAT, SCORE_GOOD,
+  WEIGHT_CRITICAL_PERFECT, WEIGHT_PERFECT, WEIGHT_GREAT, WEIGHT_GOOD,
   SECTORS, RANKS, HIT_RING_FRACTION, SHADER_FOV, NOTE_HIT_DISTANCE,
   RING_TOUCH_TOLERANCE, ACHIEVEMENT_MAX_PERCENT,
 } from './config.js';
@@ -35,23 +35,31 @@ export const KEY_TO_SECTOR: Record<string, number> = {
 export class HitJudge {
   private bus: Bus;
   private noteSpawner: NoteSpawner;
-  score: number;
+  weightSum: number;
   combo: number;
   maxCombo: number;
   totalNotes: number;
+  hitNotes: number;
+  beatmapLength: number;
   judgements: Record<Judgement, number>;
 
   constructor(bus: Bus, noteSpawner: NoteSpawner) {
     this.bus = bus;
     this.noteSpawner = noteSpawner;
-    this.score = 0;
+    this.weightSum = 0;
     this.combo = 0;
     this.maxCombo = 0;
     this.totalNotes = 0;
+    this.hitNotes = 0;
+    this.beatmapLength = 0;
     this.judgements = { critical: 0, perfect: 0, great: 0, good: 0, miss: 0 };
 
     this._setupTouch();
     this._setupKeyboard();
+  }
+
+  setBeatmapLength(n: number): void {
+    this.beatmapLength = n;
   }
 
   private _setupKeyboard(): void {
@@ -144,10 +152,11 @@ export class HitJudge {
   }
 
   reset(): void {
-    this.score = 0;
+    this.weightSum = 0;
     this.combo = 0;
     this.maxCombo = 0;
     this.totalNotes = 0;
+    this.hitNotes = 0;
     this.judgements = { critical: 0, perfect: 0, great: 0, good: 0, miss: 0 };
   }
 
@@ -164,28 +173,28 @@ export class HitJudge {
     const dist = Math.abs(note.distanceToHitZone(now, this.noteSpawner.cameraZ));
 
     let judgement: Judgement;
-    let pts: number;
+    let weight: number;
     let color: string;
     let text: string;
 
     if (dist <= CRITICAL_ZONE_RADIUS) {
       judgement = 'critical';
-      pts = SCORE_CRITICAL_PERFECT;
+      weight = WEIGHT_CRITICAL_PERFECT;
       color = '#ffee00';
       text = 'CRITICAL PERFECT';
     } else if (dist <= PERFECT_ZONE_RADIUS) {
       judgement = 'perfect';
-      pts = SCORE_PERFECT;
+      weight = WEIGHT_PERFECT;
       color = '#ffaa00';
       text = 'PERFECT';
     } else if (dist <= GREAT_ZONE_RADIUS) {
       judgement = 'great';
-      pts = SCORE_GREAT;
+      weight = WEIGHT_GREAT;
       color = '#ff44aa';
       text = 'GREAT';
     } else {
       judgement = 'good';
-      pts = SCORE_GOOD;
+      weight = WEIGHT_GOOD;
       color = '#88ff88';
       text = 'GOOD';
     }
@@ -193,13 +202,14 @@ export class HitJudge {
     note.state = 'hit';
     note.hitTime = now;
     this.totalNotes++;
+    this.hitNotes++;
     this.judgements[judgement]++;
     this.combo++;
     if (this.combo > this.maxCombo) this.maxCombo = this.combo;
-    this.score += pts;
+    this.weightSum += weight;
 
     this.bus.emit('game:hit', { note, quality: judgement === 'critical' || judgement === 'perfect' ? 'perfect' : 'good' });
-    this.bus.emit('game:score', { score: this.score, combo: this.combo });
+    this.bus.emit('game:score', { score: this.getAchievement(), combo: this.combo });
     this.bus.emit('game:judgement', { text, color });
   }
 
@@ -207,17 +217,18 @@ export class HitJudge {
     this.totalNotes++;
     this.judgements.miss++;
     this.combo = 0;
-    this.bus.emit('game:score', { score: this.score, combo: 0 });
+    this.bus.emit('game:score', { score: this.getAchievement(), combo: 0 });
     this.bus.emit('game:judgement', { text: 'MISS', color: '#ff3333' });
     this.bus.emit('game:miss');
   }
 
-  /** Get current achievement percentage (0-101) — monotonically increasing */
+  /** Get current achievement percentage (0-101).
+   *  101 / beatmapLength = score per critical perfect note.
+   *  weightSum accumulates each note's fractional contribution.
+   *  All Critical Perfect → weightSum = beatmapLength → achievement = 101%. */
   getAchievement(): number {
-    if (this.totalNotes === 0) return 0;
-    // Base = SCORE_PERFECT per note (= 100%). Critical adds bonus above 100%.
-    const basePossible = this.totalNotes * SCORE_PERFECT;
-    return (this.score / basePossible) * 100;
+    if (this.beatmapLength === 0) return 0;
+    return Math.min((this.weightSum / this.beatmapLength) * ACHIEVEMENT_MAX_PERCENT, ACHIEVEMENT_MAX_PERCENT);
   }
 
   /** Get current rank */

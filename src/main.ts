@@ -1,12 +1,13 @@
 import { bus } from './core/bus.js';
 import { BeatDetector } from './audio/BeatDetector.js';
+import { generateBeatmap, type Beatmap, type BeatmapNote } from './audio/BeatmapGenerator.js';
 import { NoteSpawner } from './engine/NoteSpawner.js';
 import { HitJudge } from './engine/HitJudge.js';
 import {
   TUNNEL_SPEED,
-  SECTORS,
   MAX_SHADER_NOTES,
   ENABLE_BEAT_FLASH,
+  NOTE_SPAWN_DISTANCE,
 } from './engine/config.js';
 import { getDifficulty } from './engine/difficulty.js';
 import { getFlowSpeed } from './engine/flowSpeed.js';
@@ -48,6 +49,9 @@ let pauseStartTime = 0;
 let lastTime = performance.now();
 let bassNorm = 0;
 let trebleNorm = 0;
+let beatmap: Beatmap | null = null;
+let beatmapIndex = 0;
+let playStartTime = 0;
 
 // ── Wire bus events ────────────────────────────────────────────────
 
@@ -55,11 +59,19 @@ let trebleNorm = 0;
 bus.on('ui:load', async ({ file }) => {
   try {
     await audio.loadAudio(file);
+
+    // Generate beatmap from the decoded audio buffer
+    const audioBuffer = audio.source!.buffer!;
+    beatmap = generateBeatmap(audioBuffer);
+    beatmapIndex = 0;
+
     audio.play();
     judge.reset();
+    judge.setBeatmapLength(beatmap.totalNotes);
     spawner.clear();
     cameraZ = 0;
-    lastTime = performance.now();
+    playStartTime = performance.now();
+    lastTime = playStartTime;
     playing = true;
     paused = false;
     if (!fractalBg) {
@@ -103,7 +115,9 @@ bus.on('ui:pause', () => {
 // UI → resume (emitted by PauseMenu after countdown)
 bus.on('ui:resume', () => {
   // Shift note timestamps so paused wall-clock time is ignored
-  spawner.shiftSpawnTimes(performance.now() - pauseStartTime);
+  const pausedDuration = performance.now() - pauseStartTime;
+  spawner.shiftSpawnTimes(pausedDuration);
+  playStartTime += pausedDuration;
   paused = false;
   playing = true;
   lastTime = performance.now();
@@ -111,21 +125,8 @@ bus.on('ui:resume', () => {
   controls.setPlaying(true);
 });
 
-// Audio → beat → spawn red single or yellow pair (maimai-style)
+// Audio → beat (only used for beat flash now, not spawning)
 audio.onBeat = (_energy, _laneIndex) => {
-  const diff = getDifficulty();
-  if (Math.random() > diff.spawnChance) return;
-
-  if (Math.random() < diff.simultaneousChance) {
-    // Yellow simultaneous pair: two different sectors
-    const s1 = Math.floor(Math.random() * SECTORS.length);
-    let s2 = (s1 + Math.floor(Math.random() * (SECTORS.length - 1)) + 1) % SECTORS.length;
-    spawner.spawnPair(s1, s2);
-  } else {
-    // Red single note
-    const sectorIndex = Math.floor(Math.random() * SECTORS.length);
-    spawner.spawn(sectorIndex, 'single');
-  }
   if (ENABLE_BEAT_FLASH && fractalBg) fractalBg.onBeat();
 };
 
@@ -201,6 +202,23 @@ function loop(): void {
     // Advance camera
     cameraZ += TUNNEL_SPEED * getFlowSpeed() * dt;
     spawner.cameraZ = cameraZ;
+
+    // Spawn notes from pre-generated beatmap
+    if (beatmap) {
+      const diff = getDifficulty();
+      const elapsedMs = now - playStartTime;
+      while (beatmapIndex < beatmap.notes.length) {
+        const entry = beatmap.notes[beatmapIndex];
+        if (entry.timeMs > elapsedMs) break;
+        if (entry.noteType === 'simultaneous') {
+          // Simultaneous notes come in pairs with same timeMs; spawn individually
+          spawner.spawn(entry.sectorIndex, 'simultaneous');
+        } else {
+          spawner.spawn(entry.sectorIndex, 'single');
+        }
+        beatmapIndex++;
+      }
+    }
 
     // Check for missed notes
     const missed = spawner.update(now);

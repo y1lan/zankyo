@@ -67,13 +67,12 @@ export const MAX_SHADER_NOTES: number = 12;
 // Note sphere radius in SDF
 export const NOTE_SPHERE_RADIUS: number = 0.1;
 
-// Scoring (maimai-style: 101% max with all Critical Perfect)
-// Base score per note = 100%. Bonus from Critical Perfect = extra 1%.
-export const SCORE_CRITICAL_PERFECT: number = 500; // 100% + 1% bonus
-export const SCORE_PERFECT: number = 495;          // 100%
-export const SCORE_GREAT: number = 400;            // ~80%
-export const SCORE_GOOD: number = 250;             // ~50%
-export const SCORE_MISS: number = 0;
+// Scoring weights (fraction of max per note; critical = 1.0 → 101% achievable)
+export const WEIGHT_CRITICAL_PERFECT: number = 1.0;       // → 101%
+export const WEIGHT_PERFECT: number = 100 / 101;          // → 100%
+export const WEIGHT_GREAT: number = 80 / 101;             // → ~80%
+export const WEIGHT_GOOD: number = 50 / 101;              // → ~50%
+export const WEIGHT_MISS: number = 0;                     // → 0%
 export const ACHIEVEMENT_MAX_PERCENT: number = 101;
 
 // Rank thresholds (percentage of max possible score)
