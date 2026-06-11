@@ -1,4 +1,4 @@
-import { JUDGEMENT_POPUP_ANIMATION_DURATION_SEC } from '../engine/config.js';
+import { JUDGEMENT_POPUP_ANIMATION_DURATION_SEC } from '../engine/Config.js';
 
 export class JudgementPopup {
   public el: HTMLDivElement;

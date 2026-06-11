@@ -1,4 +1,4 @@
-import type { Bus } from '../core/bus.js'
+import type { Bus } from '../core/Bus.js'
 import type { Judgement } from '../engine/HitJudge.js'
 
 /**

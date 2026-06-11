@@ -3,9 +3,9 @@ import {
   SECTORS, NOTE_COLOR_SINGLE, NOTE_COLOR_SIMULTANEOUS,
   NOTE_CURVE_IN, NOTE_CURVE_OUT,
   type NoteType,
-} from './config.js';
-import { getDifficulty } from './difficulty.js';
-import { getFlowSpeed } from './flowSpeed.js';
+} from './Config.js';
+import { getDifficulty } from './Difficulty.js';
+import { getFlowSpeed } from './FlowSpeed.js';
 
 let _id: number = 0;
 

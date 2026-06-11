@@ -1,4 +1,4 @@
-import { COMBO_HOT_THRESHOLD } from '../engine/config.js';
+import { COMBO_HOT_THRESHOLD } from '../engine/Config.js';
 
 export class HUD {
   public el: HTMLDivElement;

@@ -1,4 +1,4 @@
-import { BANDS } from './bands.js';
+import { BANDS } from './Bands.js';
 import {
   AUDIO_FFT_SIZE,
   AUDIO_SMOOTHING_TIME_CONSTANT,
@@ -19,8 +19,8 @@ import {
   AUDIO_RANGE_MID_END_BIN,
   AUDIO_RANGE_HIGH_START_BIN,
   AUDIO_RANGE_HIGH_END_BIN,
-} from '../engine/config.js';
-import { getDifficulty } from '../engine/difficulty.js';
+} from '../engine/Config.js';
+import { getDifficulty } from '../engine/Difficulty.js';
 
 export interface BandState {
   smoothed: number;

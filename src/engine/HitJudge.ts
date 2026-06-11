@@ -1,5 +1,5 @@
-import { bus } from '../core/bus.js';
-import type { Bus } from '../core/bus.js';
+import { bus } from '../core/Bus.js';
+import type { Bus } from '../core/Bus.js';
 import { NoteSpawner } from './NoteSpawner.js';
 import { Note } from './Note.js';
 import {
@@ -8,7 +8,7 @@ import {
   WEIGHT_CRITICAL_PERFECT, WEIGHT_PERFECT, WEIGHT_GREAT, WEIGHT_GOOD,
   SECTORS, RANKS, HIT_RING_FRACTION, SHADER_FOV, NOTE_HIT_DISTANCE,
   RING_TOUCH_TOLERANCE, ACHIEVEMENT_MAX_PERCENT,
-} from './config.js';
+} from './Config.js';
 
 export type Judgement = 'critical' | 'perfect' | 'great' | 'good' | 'miss';
 

@@ -1,4 +1,4 @@
-import { bus } from './core/bus.js';
+import { bus } from './core/Bus.js';
 import { BeatDetector } from './audio/BeatDetector.js';
 import { generateBeatmap, type Beatmap, type BeatmapNote } from './audio/BeatmapGenerator.js';
 import { NoteSpawner } from './engine/NoteSpawner.js';
@@ -8,9 +8,9 @@ import {
   MAX_SHADER_NOTES,
   ENABLE_BEAT_FLASH,
   NOTE_SPAWN_DISTANCE,
-} from './engine/config.js';
-import { getDifficulty } from './engine/difficulty.js';
-import { getFlowSpeed } from './engine/flowSpeed.js';
+} from './engine/Config.js';
+import { getDifficulty } from './engine/Difficulty.js';
+import { getFlowSpeed } from './engine/FlowSpeed.js';
 import { SceneSetup } from './rendering/SceneSetup.js';
 import { FractalBackground, type NoteShaderData } from './rendering/FractalBackground.js';
 import { Controls } from './ui/Controls.js';

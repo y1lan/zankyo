@@ -1,4 +1,4 @@
-import { BANDS, type Band } from './bands.js';
+import { BANDS, type Band } from './Bands.js';
 import {
   AUDIO_FFT_SIZE,
   AUDIO_SMOOTHING_TIME_CONSTANT,
@@ -15,8 +15,8 @@ import {
   AUDIO_ONSET_SMOOTH_BOOST,
   SECTORS,
   type NoteType,
-} from '../engine/config.js';
-import { getDifficulty } from '../engine/difficulty.js';
+} from '../engine/Config.js';
+import { getDifficulty } from '../engine/Difficulty.js';
 
 export interface BeatmapNote {
   timeMs: number;

@@ -21,7 +21,7 @@ import {
   LOGO_OFFSET_Z,
   LOGO_OFFSET_Y,
   LOGO_GLOW_INTENSITY,
-} from '../engine/config.js';
+} from '../engine/Config.js';
 
 const VERTEX_SHADER = /* glsl */ `
 varying vec2 vUv;

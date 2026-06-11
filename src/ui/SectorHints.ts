@@ -1,5 +1,5 @@
-import type { Bus } from '../core/bus.js';
-import { SECTORS, HIT_RING_FRACTION } from '../engine/config.js';
+import type { Bus } from '../core/Bus.js';
+import { SECTORS, HIT_RING_FRACTION } from '../engine/Config.js';
 import { KEY_TO_SECTOR } from '../engine/HitJudge.js';
 
 // Place hints just outside the ring

@@ -2,8 +2,8 @@ import { Note } from './Note.js';
 import {
   HIT_ZONE_RADIUS, MISS_DISTANCE, HIT_NOTE_HOLD_MS, NOTE_FLY_DURATION_MS,
   NOTE_SPAWN_DISTANCE, type NoteType,
-} from './config.js';
-import { getDifficulty } from './difficulty.js';
+} from './Config.js';
+import { getDifficulty } from './Difficulty.js';
 
 export class NoteSpawner {
   notes: Note[];

@@ -20,7 +20,6 @@
         devShells.default = mkShell {
           buildInputs = [
             nodejs_26
-            wrangler
           ];
         };
       }
