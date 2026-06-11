@@ -84,6 +84,14 @@ export class NoteSpawner {
     return best;
   }
 
+  /** Shift all note timestamps forward by ms to compensate for paused wall-clock time */
+  shiftSpawnTimes(ms: number): void {
+    for (const note of this.notes) {
+      note.spawnTime += ms;
+      if (note.hitTime !== null) note.hitTime += ms;
+    }
+  }
+
   clear(): void {
     this.notes = [];
   }
