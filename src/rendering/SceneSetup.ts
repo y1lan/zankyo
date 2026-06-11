@@ -11,6 +11,7 @@ import {
   BLOOM_STRENGTH,
   BLOOM_RADIUS,
   BLOOM_THRESHOLD,
+  FRACTAL_MAX_PIXELS,
 } from '../engine/config.js';
 
 export class SceneSetup {
@@ -30,7 +31,7 @@ export class SceneSetup {
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, SCENE_MAX_PIXEL_RATIO));
+    this.renderer.setPixelRatio(this._cappedPixelRatio());
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = SCENE_TONE_MAPPING_EXPOSURE;
     document.body.appendChild(this.renderer.domElement);
@@ -48,9 +49,21 @@ export class SceneSetup {
     window.addEventListener('resize', () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
+      this.renderer.setPixelRatio(this._cappedPixelRatio());
       this.renderer.setSize(window.innerWidth, window.innerHeight);
       this.composer.setSize(window.innerWidth, window.innerHeight);
     });
+  }
+
+  /** Compute effective pixel ratio capped by FRACTAL_MAX_PIXELS */
+  private _cappedPixelRatio(): number {
+    const basePR = Math.min(window.devicePixelRatio, SCENE_MAX_PIXEL_RATIO);
+    if (FRACTAL_MAX_PIXELS <= 0) return basePR;
+    const totalPixels = window.innerWidth * basePR * window.innerHeight * basePR;
+    if (totalPixels <= FRACTAL_MAX_PIXELS) return basePR;
+    // Scale down pixel ratio to fit within cap
+    const scale = Math.sqrt(FRACTAL_MAX_PIXELS / totalPixels);
+    return basePR * scale;
   }
 
   render(): void {

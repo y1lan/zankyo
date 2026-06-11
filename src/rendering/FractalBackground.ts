@@ -11,6 +11,7 @@ import {
   FRACTAL_SHAKE_DECAY,
   FRACTAL_HIT_EFFECT_DECAY,
   SCENE_MAX_PIXEL_RATIO,
+  FRACTAL_MAX_PIXELS,
   FRACTAL_CONE_TILE_SIZE,
   FRACTAL_CONE_MAX_STEPS,
   FRACTAL_CONE_STEP_SCALE,
@@ -638,10 +639,16 @@ export class FractalBackground {
     this.material.uniforms.u_coneTexResolution.value.copy(this.coneTexResolution);
   }
 
-  /** Physical canvas resolution, accounting for device pixel ratio (capped at SCENE_MAX_PIXEL_RATIO) */
+  /** Physical canvas resolution, accounting for device pixel ratio and pixel cap */
   private _physRes(): THREE.Vector2 {
-    const pr = Math.min(window.devicePixelRatio, SCENE_MAX_PIXEL_RATIO);
-    return new THREE.Vector2(window.innerWidth * pr, window.innerHeight * pr);
+    let pr = Math.min(window.devicePixelRatio, SCENE_MAX_PIXEL_RATIO);
+    if (FRACTAL_MAX_PIXELS > 0) {
+      const totalPixels = window.innerWidth * pr * window.innerHeight * pr;
+      if (totalPixels > FRACTAL_MAX_PIXELS) {
+        pr *= Math.sqrt(FRACTAL_MAX_PIXELS / totalPixels);
+      }
+    }
+    return new THREE.Vector2(Math.round(window.innerWidth * pr), Math.round(window.innerHeight * pr));
   }
 
   /** Convert screen-fraction ring size to SDF world-space radius */

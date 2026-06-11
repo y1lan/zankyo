@@ -222,10 +222,14 @@ function loop(): void {
   // title screen) still render via the browser.
   if (!playing) return;
 
-  // FPS
+  // FPS + pixel count
   fpsFrames++;
   if (now - fpsLastUpdate >= 500) {
-    fpsEl.textContent = `${(fpsFrames / ((now - fpsLastUpdate) / 1000)).toFixed(0)} fps`;
+    const fps = (fpsFrames / ((now - fpsLastUpdate) / 1000)).toFixed(0);
+    const pr = sceneSetup.renderer.getPixelRatio();
+    const totalPx = Math.round(window.innerWidth * pr * window.innerHeight * pr);
+    const pxStr = totalPx > 1_000_000 ? `${(totalPx / 1_000_000).toFixed(2)}M` : `${(totalPx / 1000).toFixed(0)}K`;
+    fpsEl.textContent = `${fps} fps | ${pxStr} px`;
     fpsFrames = 0;
     fpsLastUpdate = now;
   }

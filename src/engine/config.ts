@@ -144,6 +144,7 @@ export const SCENE_TONE_MAPPING_EXPOSURE: number = 1.0
 export const BLOOM_STRENGTH: number = 1.2
 export const BLOOM_RADIUS: number = 1
 export const BLOOM_THRESHOLD: number = 1.5
+export const FRACTAL_MAX_PIXELS: number = 2_073_600 // max total pixels for shader render (0 = no cap)
 
 // Fractal shader runtime
 export const FRACTAL_FULLSCREEN_PLANE_SIZE: number = 2
