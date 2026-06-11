@@ -84,14 +84,17 @@ bus.on('ui:stop', () => {
   hud.updateScore(0, 0);
 });
 
-// UI → pause (only effective when playing)
+// UI → pause: pause when playing, or start resume countdown when already paused
 bus.on('ui:pause', () => {
-  if (!playing) return;
-  playing = false;
-  paused = true;
-  pauseStartTime = performance.now();
-  audio.pause();
-  pauseMenu.show(bgEnabled);
+  if (playing) {
+    playing = false;
+    paused = true;
+    pauseStartTime = performance.now();
+    audio.pause();
+    pauseMenu.show(bgEnabled);
+  } else if (paused) {
+    pauseMenu.startResume();
+  }
 });
 
 // UI → resume (emitted by PauseMenu after countdown)

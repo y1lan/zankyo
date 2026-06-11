@@ -138,6 +138,10 @@ export class PauseMenu {
     this.el.classList.remove('pm-visible');
   }
 
+  startResume(): void {
+    this._startCountdown();
+  }
+
   private _startCountdown(): void {
     this.buttonsEl.style.display = 'none';
     this.countdownEl.style.display = 'block';
